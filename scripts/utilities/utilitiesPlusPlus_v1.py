@@ -808,13 +808,13 @@ class processData:
               "selPhi0", "selPhi1", "selPhi2", "selPhi3", "selCharge0", "selCharge1", "selCharge2", "selCharge3", "dPhi0", "dPhi1","dRA0", "dRA1", "event", "invMassA0",\
               "invMassA1", "pair"])
              
-                dataDir = resultDir + "/" + self.file_name
+                dataDir = resultDir + "/" + self.fileName
                 try:
                     os.makedirs(dataDir) # create directory for VFAT data
                 except FileExistsError: # skip if directory already exists
                     pass
             
-                total_df.to_csv(dataDir + "total_df_%s.csv" % self.file_name)
+                total_df.to_csv(dataDir + "total_df_%s.csv" % self.fileName)
 
         if ret:
             print("Returning final array")
