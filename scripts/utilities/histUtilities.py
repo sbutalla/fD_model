@@ -322,7 +322,7 @@ class histogram:
                     fig, ax = plt.subplots(figsize = (10, 10))
                     ax.grid(zorder = 0)
 
-                    plt.bar(self.histData_sig[key][pair]["bins"][:-1], self.histData_sig[key][pair]["hist"], width = 3.5, label = "MC Signal Data\n"  + r'$m_{Z_{D}} = $ %s, $m_{f_{d1}} = $ %s' % (key.split("_")[1], key.split("_")[2]), edgecolor = 'black', color = "darkred", zorder = 3)
+                    plt.bar(self.histData_sig[key][pair]["bins"][:-1], self.histData_sig[key][pair]["hist"], width = 3.5, label = "MC Signal Data\n"  + r'$m_{Z_{D}} = $ %s\n, $m_{f_{D1}} = $ %s' % (key.split("_")[1], key.split("_")[2]), edgecolor = 'black', color = "darkred", zorder = 3)
 
                     plt.ylabel("Number of Events/3.5 GeV", fontsize = 30, loc = "top")
                     plt.xlabel(r'$m_{\mu\mu_{%i}}$ [GeV]' % mu_cnt, fontsize = 30, loc = "right")
