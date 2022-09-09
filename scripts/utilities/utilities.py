@@ -28,12 +28,47 @@ dR_cut      = 0.05 # threshold for dR between gen and sel muons (all dRs lower t
 class process_data:
     '''
     Processes root files. Functions:
-    __init__:      Class constructor. 
-    extract_data():  Opens the root file, extracts the observables of interest,
-                   and assigns these as an attribute of the class.
-    
-    Applies preliminary cuts
-    
+    __init__:         Class constructor. 
+    extract_data():   Accepts absolute (or relative) path for a ROOT file and extracts all
+                      observables of interestevent data. These data are stored as attributes
+                      of the process_data class, and can optionally be returned.
+    prelim_cuts():    Applies preliminary cuts based on reco-level eta, phi, pT, and charge,
+                      and if the dataset is mc, cut based on gen-level eta.
+    matchBkgMu():     Arbitrarily 'pseudo-matches' the muons from the background dataset (or
+                      any other dataset). This is a preprocessing step for data that will be 
+                      fed to the trained ML model after processing is complete
+    dRgenCalc():      Calculates the dR value between the generator level and reco level muons.
+                      Used to determine if the muons are reconstructed properly.
+    SSM():            Stochastic sampling method (SSM) used to pseudorandomly sample
+                      the muons and then determinine the minimum delta R between the gen
+                      and sel level muons. Outline of procedure:
+        
+                      for each event:
+                          1. Retrieve both the sel and gen level charge information of the
+                             muons.
+                          2. Pseudorandomly select a muon [0, 3].
+                          3. Based off of this muon, determine the oppositely charged muons
+                             and the other muon with same charge.
+                          4. Calculate the minimum dR (dR = sqrt{eta^2 + phi^2}; previously
+                             calculated) between the gen and sel muons for same and opposite
+                             charge muons.
+                                 a. If pseudorandomly chosen muon has minimum dR of the two same/opposite
+                                    charged muons:
+                                        Label that muon and remove the index from the total list of charge.
+                                 b. Pair the other sel muon with the other same charge gen muon.
+                          5. From the minima previously calculated, determine which opposite charged
+                             muon has the minimum dR.
+                                 a. Pair the remaining oppositely charged sel muon to the last muon available.
+                                 
+        dRcut():          Apply cuts based on dR. Remove events if two muons---gen and sel level---are too far apart
+                          in R. The dR cut value is specified as a global variable at the top of the file.
+        permutations():   Generate all of the permutations possible of the four muons.
+        invMassCalc():    Based on the correct pairing, calculate the invariant mass for the correct and
+                          incorrect permutations.
+        dR_diMu():        Calculates the dR between both sets of paired dimuons, and also calculates the dPhi between
+                          both sets of paired dimuons.
+        fillFinalArray(): Fills the final output array for use with ML models or further analysis.
+        fillAndSort():    A lightweight version of fillFinalArray().
     '''
     def __init__(self, dataset, ml_met = False):
         '''
@@ -56,6 +91,7 @@ class process_data:
         Change log:
         S.D.B., 2022/08/30
             - Added the optional argument ml_met. 
+
         '''
         
         # Check arguments
@@ -101,9 +137,12 @@ class process_data:
         Change log:
         S.D.B., 2022/08/30
             - Added the printing to std. out in color via the print_alert() function in file_utils.
+
+        S.D.B., 2022/09/08
+            - Corrected error in fileName (file extension '.root' was previously included).
         ''' 
         
-        self.fileName = root_file.split("/")[-1] # get file name 
+        self.fileName = root_file.split("/")[-1].split(".")[0] # get file name 
         
         if verbose:
             print_alert("\n\n")
@@ -431,20 +470,20 @@ class process_data:
             genChargeopo = np.array(np.where(self.genAMu_chargeCut[event,:] != chargeTemp)).reshape((2,)) # Select gen muons where charge (array of indices)
             selChargeopo = np.array(np.where(self.selMu_chargeCut[event,:] != chargeTemp)).reshape((2,))  # Select sel muons where charge (array of indices)
 
-            if verbose:
-                print_alert("Event: %i\n" % event)
+            #if verbose:
+            #    print_alert("Event: %i\n" % event)
                 # print charge of each sel muon
-                for pair in range(2):
-                    print_alert("sel-level charge, muon%d: %d" % (pair, selCharge[pair]))
-                for pair in range(2):
-                    print_alert("sel Opposite sel-level chargeopo[%d]: %d", selChargeopo[pair])
+            #    for pair in range(2):
+            #        print_alert("sel-level charge, muon%d: %d" % (pair, selCharge[pair]))
+            #    for pair in range(2):
+            #        print_alert("sel Opposite sel-level chargeopo[%d]: %d", selChargeopo[pair])
                 
                 # print charge of each gen muon
-                for pair in range(2):
-                    print_alert("gen charge[%d]: %d", genCharge[pair])
-                for pair in range(2):
-                    print_alert("gen chargeopo[0]: ", genChargeopo[0])
-                print_alert("gen chargeopo[1]: ", genChargeopo[1])
+            #    for pair in range(2):
+            #        print_alert("gen charge[%d]: %d", genCharge[pair])
+            #    for pair in range(2):
+            #        print_alert("gen chargeopo[0]: ", genChargeopo[0])
+            #    print_alert("gen chargeopo[1]: ", genChargeopo[1])
 
             # Calculating minimum dR for each same and opposite charge gen muons
             min_dR0_index1 = np.array(np.minimum(self.dRgen[event,genCharge[0], selCharge[0]], self.dRgen[event, genCharge[0], selCharge[1]])).reshape((1,))
@@ -494,11 +533,11 @@ class process_data:
             for muon in range(4):
                 self.min_dRgen[event, genInd[muon]] = selInd[muon]
             
-            if verbose:
-                print_alert("sel muon: ", selIndex1, ", mached with gen: ", genIndex1)
-                print_alert("other sel muon: ", selIndex2, ", mached with other gen: ", genIndex2)
-                print_alert("opposite charge sel muon: ", selIndex3, ", mached with opposite charge gen: ", genIndex3)
-                print_alert("other opposite charge sel muon: ", selIndex4, ", mached with other opposite charge gen: ", genIndex4)
+            #if verbose:
+            #    print_alert("sel muon: ", selIndex1, ", mached with gen: ", genIndex1)
+            #    print_alert("other sel muon: ", selIndex2, ", mached with other gen: ", genIndex2)
+            #    print_alert("opposite charge sel muon: ", selIndex3, ", mached with opposite charge gen: ", genIndex3)
+            #    print_alert("other opposite charge sel muon: ", selIndex4, ", mached with other opposite charge gen: ", genIndex4)
             
             if extraInfo:
                 dEtaMatched  = np.ndarray((self.dRgen.shape[0], 4))
@@ -620,7 +659,7 @@ class process_data:
                 del self.selMu_phiCut
                 del self.selMu_ptCut
                 del self.selMu_chargeCut
-            except NameError: # if they don't exist, e.g., if processing 'sig' dataset and ml_met is true, the pass
+            except NameError: # if they don't exist, e.g., if processing 'sig' dataset and ml_met is true, then pass
                 pass
 
         if verbose:
@@ -639,10 +678,10 @@ class process_data:
             correctSelChargeOrder = self.selMu_chargeFinal[event, correctPerm]                   # Correct order of charges (matched)
             pos                   = np.array(np.where(correctSelChargeOrder == 1)).reshape((2,)) # indices of positive sel muons
 
-            if verbose:
-                print_alert("Event ", event)
-                print_alert("Correct permutation: ", correctPerm)  
-                print_alert("Correct sel muon charge order", correctSelChargeOrder)
+            #if verbose:
+            #    print_alert("Event %d" % event)
+            #    print_alert("Correct permutation: ", correctPerm)  
+            #    print_alert("Correct sel muon charge order", correctSelChargeOrder)
             
             # start with permuting positive muons
             self.wrongPerm[event, 0, pos[0]] = self.min_dRgenFinal[event, pos[1]]
@@ -663,7 +702,7 @@ class process_data:
         
         if ret:
             if verbose:
-                print("Arrays returned: wrongPerm, allPerm")
+                print_alert("Arrays returned: wrongPerm, allPerm")
 
             return self.wrongPerm, self.allPerm
 
@@ -778,7 +817,7 @@ class process_data:
         if verbose:
             print_alert("\n\n")
             print_alert(60 * '*')
-            print_alert(colors.GREEN + "Calculating dPhi and dR for all permutations" + colors.ENDC)
+            print_alert("Calculating dPhi and dR for all permutations")
             print_alert(60 * '*')
 
         numEvents    = self.min_dRgenFinal.shape[0]
@@ -967,7 +1006,7 @@ class process_data:
                     print_alertert("Array returned: dataframe_shaped")
                 return dataframe_shaped
             
-    def fillAndSort(self, save = False, ret = True, verbose = False):
+    def fillAndSort(self, save = False, ret = True, verbose = False, custom_dir = None):
         '''
         A lightweight version of fillFinalArray().
 
@@ -981,6 +1020,11 @@ class process_data:
         Outputs:
         Final array with all information.
         dataframe_shaped: (attr; float/int, np.array) The array that has all of the event data. Shape is N_events x 24.
+
+        Change log:
+        S.D.B. 2022/08/31:
+            - Added printing options from file_utils
+            - Added custom directory option for saving dataframe as a .csv.
         '''
         if verbose:
             print_alert("\n\n")
@@ -1023,13 +1067,55 @@ class process_data:
               "selPhi0", "selPhi1", "selPhi2", "selPhi3", "selCharge0", "selCharge1", "selCharge2", "selCharge3", "dPhi0", "dPhi1","dRA0", "dRA1", "event", "invMassA0",\
               "invMassA1", "pair"])
 
-                dataDir = resultDir + "/" + self.fileName
-                try:
-                    os.makedirs(dataDir) # create directory for VFAT data
-                except FileExistsError: # skip if directory already exists
-                    pass
+                if custom_dir is not None:
+                    dataDir = custom_dir + "/" + self.fileName
+                    try:
+                        os.makedirs(dataDir) # create directory
+                    except FileExistsError: # skip if directory already exists
+                        pass
+                else:
+                    dataDir = resultDir + "/" + self.fileName
+                    try:
+                        os.makedirs(dataDir) # create directory
+                    except FileExistsError: # skip if directory already exists
+                        pass
 
-                total_df.to_csv(dataDir + "total_df_%s.csv" % self.fileName)
+                total_df.to_csv(dataDir + "/total_df_%s.csv" % self.fileName)
 
         if ret:
             return self.dataframe_shaped
+
+def import_csv(file_name, sep = ",", header = 'infer'):
+    '''
+    Imports a comma-separated value (.csv) or tab-separated value (.tsv) file
+    as a pandas dataframe.
+    
+    Stephen D. Butalla
+    2022/09/08, v. 0
+    
+    Positional arguments:
+    file_name:     (str) The absolute or relative path of the file to be imported as a 
+                   dataframe.
+                   
+    Optional arguments:
+    sep:           (str) The value separator type of the file. Must be either ',' or '\t'.
+                   Default = ','.
+    header:        (str; int) If there is a header present in the file. Default = 'infer'.
+    
+    Outputs:
+    A pandas dataframe.
+    '''
+    file_ext = file_name[-4:].lower()
+    if file_ext not in [".csv", "tsv"]: # check file extension
+        print_error("File can be a comma-separated file or tab-separated file.")
+        print_error("Input file: %s. Exiting..." % file_name)
+        sys.exit()
+    
+    if file_ext == ".csv" and sep == "\t":
+        print_alert(".csv file passed and specified separator set to ','. Changing separator to '\t'.")
+        sep = ","
+    elif file_ext == ".tsv" and sep == ",":
+        print_alert("t.sv file passed and specified separator set to ','. Changing separator to '\t'.")
+        sep = "\t"
+    
+    return pd.read_csv(file_name, sep = sep, header = header)
