@@ -8,7 +8,7 @@ import numpy as np
 import sys
 import os
 sys.path.insert(0, "/Volumes/EASYSTORE/fD_model/utilities/")
-from file_utils import *
+from utilities.file_utils import *
 
 global resultDir
 global cutflow_dir
