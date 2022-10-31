@@ -191,3 +191,119 @@ def heat_map(metric):
 
     index += 1
 
+
+def numerous_heat_map():
+    # Directory the stores the object list json file.
+    dir = '/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102822_843AM/model_list.json'
+
+    f = open(dir)
+    data = json.load(f)
+
+    # max_depth_array = [3, 6, 10, 12, 15]
+    # eta_array = [0.1, 0.3, 0.4, 0.5, 0.6]
+    value_array = []
+
+    # Sort dict based on learning rate in increasing order
+    data = sorted(data, key=lambda x: x['eta'], reverse=False)
+    index = 0
+
+    '''
+        Collect all potential values in the the dictionaries. This is used as opposed to hard coding
+        lists because the values tested have been changed in the past and it will eliminate the problem
+        of changing the values.
+    '''
+
+    eta_array = []
+    max_depth_array = []
+    l1_list = []
+    l2_list = []
+    objective_list = []
+    for val in data:
+        if val['eta'] not in eta_array:
+            eta_array.append(val['eta'])
+
+        if val['max depth'] not in max_depth_array:
+            max_depth_array.append(val['max depth'])
+
+        if val['l1'] not in l1_list:
+            objective_list.append(val['l1'])
+
+        if val['l2'] not in l2_list:
+            objective_list.append(val['l2'])
+
+        if val['objective'] not in objective_list:
+            objective_list.append(val['objective'])
+
+    eta_array.sort()
+    max_depth_array.sort()
+    l1_list.sort()
+    l2_list.sort()
+    objective_list.sort()
+
+    '''
+        Extract and store all of the important data to be plotted. Extract everything based on objective first.
+        Then sort based on L1 and L2 value.
+    '''
+
+    all = []
+    for val_objective in objective_list:
+        temp_obj = []
+        for val in data:
+            if val['objective'] == val_objective:
+                temp_obj.append(val)
+        all.append(temp_obj)
+
+    l1_sorted = []
+
+    for val in all:
+        temp = []
+        for val_l1 in l1_list:
+            if val['l1'] == val_l1:
+                temp.append(val)
+
+        l1_sorted.append(temp)
+
+
+
+
+
+    '''
+        Iterate through the dictionary finding values of the same maximum depth to group the data.
+        Store the dictionary values in a temporary list. Append the temporary list to the list to 
+        contain all lists. This will create a 2d Array to be plotted.
+    '''
+
+    for i in range(len(max_depth_array)):
+        storage = []
+        temp_value_array = []
+        data = sorted(data, key=lambda x: x['eta'])
+        for val in data:
+            if val['max depth'] == max_depth_array[index]:
+                storage.append(val)
+
+        for val in storage:
+            temp_value_array.append(val['%s' % metric])
+        value_array.append(temp_value_array)
+        index += 1
+
+    value_array.reverse()  # Reverse the array storing all of the values
+    # value_array = np.array(value_array, dtype=object)     # Convert to numpy array
+    value_array = np.array(value_array)  # Convert to numpy array
+    # print(value_array)
+
+    plt.rcParams.update({'font.size': 14})  # Increase font size for plotting
+    fig, ax = plt.subplots(figsize=(40, 4))  # Initialize plot
+    # im = ax.imshow(value_array)
+    im = ax.imshow(value_array, vmin=vmin, vmax=vmax)
+    ax.set_xlabel(r'Learning rate ($\eta$)', loc="right")
+    ax.set_ylabel('Max depth', loc="top")
+    cbar = ax.figure.colorbar(im, ax=ax)
+    cbar.ax.set_ylabel('%s' % metric.capitalize(), rotation=-90, va="bottom")
+
+    max_depth_array.reverse()  # Reverse the y-axis to increasing order.
+
+    ax.set_xticks(np.arange(len(eta_array)), labels=eta_array)
+    ax.set_yticks(np.arange(len(max_depth_array)), labels=max_depth_array)
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right",
+             rotation_mode="anchor")
+
