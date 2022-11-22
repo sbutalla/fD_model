@@ -159,7 +159,7 @@ class xgb:
         
         self.ml_met = ml_met # calculate/plot and optionally save machine learning metrics 
 
-    def split(self, dataframe, drop_evt = False, test = 0.30, random = 7, scaler_type = None, ret = False, verbose = False):
+    def split(self, dataframe, drop_evt = True, test = 0.30, random = 7, scaler_type = None, ret = False, verbose = False):
         '''
         Shuffles and splits the features/labels of the dataset given the raw numpy array with 
         shape (events, observables). Pre-scaling can optionally be applied to the data before splitting creating
