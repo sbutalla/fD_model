@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import joblib
-from sklearn.metrics import classification_report
+from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.metrics import accuracy_score, matthews_corrcoef
 import sys
 import os
@@ -15,6 +15,8 @@ import time
 import xgboost
 from sklearn import tree as sktree
 import warnings
+
+from tuning.model_per_sample import ModelPerSample
 
 '''
     Cleaned up version of xgb_plusplus.py for hyperparameter tuning. This version of the class is used
@@ -81,6 +83,8 @@ class xgb:
 
         X_data = dataframe_shaped[:, 0:23]
         Y_data = dataframe_shaped[:, 20:24]
+        # X_data = dataframe_shaped[:]
+        # Y_data = dataframe_shaped[:]
 
         if self.dataset == "mc":
             if scalerType is None:
@@ -161,6 +165,13 @@ class xgb:
 
     def xgb(
             self,
+            zd_mass,
+            fd1_mass,
+            resultDir,
+            trainX,
+            testX,
+            trainY,
+            testY,
             met=True,
             save=True,
             filename="MZD_200_55_pd_model.sav",
@@ -174,8 +185,10 @@ class xgb:
             reg_alpha=None,
             reg_lambda=None,
             tree=False,
-            objective=None
+            objective=None,
+            ret_mod=True
     ):
+
         # print("\n\n")
         # print(60 * "*")
         # print(colors.GREEN + "Building the XGBoost model and training" + colors.ENDC)
@@ -206,7 +219,11 @@ class xgb:
         model = proc.select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
 
         start = time.time()
-        model.fit(self.trainX, self.trainY)
+        eval_set = [(trainX, trainY), (testX, testY)]
+        # model.fit(trainX, trainY, eval_metric = [])
+        model.fit(trainX, trainY, early_stopping_rounds=10,
+                  eval_metric=["logloss", "error", "auc"], eval_set=eval_set,
+                  verbose=False)
         end = time.time()
 
         if tree:
@@ -231,16 +248,25 @@ class xgb:
             joblib.dump(model, filename)
 
         if met:
-            predictedY = model.predict(self.testX)
+            # predictedY = model.predict(self.testX)
+            predictedY = model.predict(testX)
+
+            mod_probs = model.predict_proba(testX)  # predict probabilities
+            mod_probs = mod_probs[:, 1]  # probabilities for pos. outcome only
+            mod_auc = roc_auc_score(testY, mod_probs)  # model (logistic) AUC
 
             # Testing, original
             class_out = dataDir + "/classification_report.json"
             out_file = open(class_out, "w")
-            class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
+            #class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
+            class_report = dict(classification_report(testY, predictedY, output_dict=True))
             class_report['parameters'] = {'eta': eta, 'max_depth': max_depth, 'booster': booster,
                                           'l1': reg_alpha, 'l2': reg_lambda, 'objective': objective}
-            class_report['mcc'] = matthews_corrcoef(self.testY, predictedY)
+            # class_report['mcc'] = matthews_corrcoef(self.testY, predictedY)
+            class_report['mcc'] = matthews_corrcoef(testY, predictedY)
             json.dump(class_report, out_file)
+
+
 
             '''
                 Filling the object that stores all of the data. Store the objects in a list to be sorted
@@ -249,72 +275,47 @@ class xgb:
                 Booster?
                 Check notebook for others.
             '''
+            mod = ModelPerSample()
+            mod.zD = zd_mass
+            mod.fD1 = fd1_mass
+            mod.eta = class_report['parameters']['eta']
+            mod.max_depth = class_report['parameters']['max_depth']
+            mod.booster = class_report['parameters']['booster']
+            mod.accuracy = class_report['accuracy']
+            mod.mcc = class_report['mcc']
+            mod.time = total_time
+            mod.f1 = class_report['1']['f1-score']
+            mod.precision = class_report['1']['precision']
+            mod.reg_alpha = class_report['parameters']['l1']
+            mod.reg_lambda = class_report['parameters']['l2']
+            mod.objective = class_report['parameters']['objective']
+            mod.auc = mod_auc
 
-            mod = Model()
-            mod.set_eta(class_report['parameters']['eta'])
-            mod.set_max_depth(class_report['parameters']['max_depth'])
-            mod.set_booster(class_report['parameters']['booster'])
-            mod.set_accuracy(class_report['accuracy'])
-            mod.set_mcc(class_report['mcc'])
-            mod.set_time(total_time)
-            mod.set_f1(class_report['1.0']['f1-score'])
-            mod.set_precision(class_report['1.0']['precision'])
-            mod.set_reg_alpha(class_report['parameters']['l1'])
-            mod.set_reg_lambda(class_report['parameters']['l2'])
-            mod.set_objective(class_report['parameters']['objective'])
-            xgb.model_list.append(mod)
-            del mod
+            mod_out = dataDir + "/model.json"
+            out_file = open(mod_out, "w")
+            json.dump(mod.get_model(), out_file)
 
-            # print(
-            #     "\nTraining Classification Report:\n\n",
-            #     classification_report(self.testY, predictedY),
-            # )
 
-        # merging Xtrain and Xtest
-        totalDF_X1 = pd.concat([self.trainX, self.testX], axis=0)
 
-        # sorting the X based on event number
-        self.sorted_X = totalDF_X1.sort_values("event")
 
-        # predicting for ALL X
-        total_predY = model.predict(self.sorted_X)
+            # mod = Model()
+            # mod.set_eta(class_report['parameters']['eta'])
+            # mod.set_max_depth(class_report['parameters']['max_depth'])
+            # mod.set_booster(class_report['parameters']['booster'])
+            # mod.set_accuracy(class_report['accuracy'])
+            # mod.set_mcc(class_report['mcc'])
+            # mod.set_time(total_time)
+            # mod.set_f1(class_report['1']['f1-score'])
+            # mod.set_precision(class_report['1']['precision'])
+            # mod.set_reg_alpha(class_report['parameters']['l1'])
+            # mod.set_reg_lambda(class_report['parameters']['l2'])
+            # mod.set_objective(class_report['parameters']['objective'])
+            # xgb.model_list.append(mod)
 
-        # reshaping the
-        pred = total_predY.reshape(-1, 3)
+            if ret_mod:
+                return mod
+            else:
+                del mod
+                return None
 
-        # sorted_X
-        arr = total_predY
-        self.sorted_X["Predict"] = arr.tolist()
-
-        # selecting rows based on condition
-        # here we only have correct match for each event
-        self.correct_pair = self.sorted_X[self.sorted_X["Predict"] == 1]
-
-        # selecting the wrong matches for each event
-        self.wrong_pair = self.sorted_X[self.sorted_X["Predict"] == 0]
-
-        self.correct_pair.to_csv(dataDir + ("/correct_pair_%s.csv" % self.file_name))
-        self.wrong_pair.to_csv(dataDir + ("/wrong_pair_%s.csv" % self.file_name))
-
-        self.model_run = True
-
-        if single_pair:
-            self.single_correct_pair = self.correct_pair.drop_duplicates(
-                subset=["event", "Predict"], keep="last"
-            )
-            self.single_wrong_pair = self.wrong_pair.drop_duplicates(
-                subset=["event", "Predict"], keep="last"
-            )
-
-            self.single_correct_pair.to_csv(
-                dataDir + ("/single_correct_pair_%s.csv" % self.file_name)
-            )
-            self.single_wrong_pair.to_csv(
-                dataDir + ("/single_wrong_pair_%s.csv" % self.file_name)
-            )
-
-        if ret:
-            if single_pair:
-                return self.single_correct_pair
-        else:
-            return None
+        return None

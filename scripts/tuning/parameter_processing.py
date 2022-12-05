@@ -11,10 +11,14 @@ class Process:
     '''
 
     def select_file(self, eta, max_depth, resultDir, mc_model, reg_lambda, reg_alpha, objective):
+        # if eta == 0.3:
+        #     data_dir = resultDir + '/default'
+        # else:
+        #     data_dir = resultDir + '/optimal'
 
-        result_dir = resultDir + '/' + mc_model
-        data_dir = result_dir + ('/eta_%s/max_depth_%s/l1_%s/l2_%s/objective_%s' % (eta, max_depth, reg_alpha, reg_lambda, objective))
-        # data_dir = result_dir + ("/eta_%s_&_max_depth_%s_&_l1_%s_&_l2_%s/"
+        # result_dir = resultDir + '/' + mc_model
+        data_dir = resultDir + ('/eta_%s/max_depth_%s/l1_%s/l2_%s/objective_%s' % (eta, max_depth, reg_alpha, reg_lambda, objective))
+        # # data_dir = result_dir + ("/eta_%s_&_max_depth_%s_&_l1_%s_&_l2_%s/"
         #                                          % (eta, max_depth, reg_alpha, reg_lambda))
 
 
@@ -23,16 +27,25 @@ class Process:
 
     def select_model(self, eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassifier:
         warnings.filterwarnings("ignore")
-        model = XGBClassifier(
-            n_jobs=-1,
-            # use_label_encoder=False,
-            eval_metric="logloss",
-            random_state=7,
-            eta=eta,
-            max_depth=max_depth,
-            reg_lambda=reg_lambda,
-            reg_alpha=reg_alpha,
-            objective=objective
-        )
+        if eta == 0.6:
+            model = XGBClassifier(
+                # n_jobs=-1,
+                # early_stopping_rounds=10,
+                # use_label_encoder=False,
+                eval_metric=['logloss', 'error', 'auc'],
+                random_state=7,
+                eta=eta,
+                max_depth=max_depth,
+                reg_lambda=reg_lambda,
+                reg_alpha=reg_alpha,
+                objective=objective
+
+            )
+        else:
+            model = XGBClassifier(
+                random_state=7,
+                eval_metric=['logloss', 'error', 'auc']
+            )
+
 
         return model

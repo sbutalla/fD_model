@@ -19,7 +19,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 import sys
 from xgboost import XGBClassifier
-sys.path.insert(0, "/Volumes/EASYSTORE/fD_model/utilities/")
+sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities")
 from file_utils import *
 
 global resultDir
@@ -159,7 +159,7 @@ class xgb:
         
         self.ml_met = ml_met # calculate/plot and optionally save machine learning metrics 
 
-    def split(self, dataframe, drop_evt = True, test = 0.30, random = 7, scaler_type = None, ret = False, verbose = False):
+    def split(self, dataframe, drop_evt = True, test = 0.30, random = 7, scaler_type = None, ret = True, verbose = False):
         '''
         Shuffles and splits the features/labels of the dataset given the raw numpy array with 
         shape (events, observables). Pre-scaling can optionally be applied to the data before splitting creating
@@ -378,7 +378,7 @@ class xgb:
             
             if save:
                 class_report_path = dataDir + "/class_report.json"
-                with open(class_report_path, "w") as file
+                with open(class_report_path, "w") as file:
                     json.dump(classification_report(self.testY, predictedY, output_dict = True), file)
                 
                 if verbose:
