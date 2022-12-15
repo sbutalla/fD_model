@@ -18,7 +18,7 @@ global scale_factor_sig
 global plot_order
 global color_list
 global color_sig
-global dataDir
+global data_directory
 global signalDir
 
 points            = [0, 60, 100]
@@ -44,7 +44,7 @@ color_list       = {
 "ggHToZZTo4L" : "cyan",
 "ggToZZTo4mu" : "magenta"}
 
-dataDir   = "dataframes/"
+data_directory   = "dataframes/"
 signalDir = "DataAboveUpsilonCRSR_MZD_200_55_signal"
 
 plt.rcParams.update({'font.size': 24}) # Increase font size for plots
@@ -175,7 +175,7 @@ class kde:
                 
                     plt.show()    
                     if save:
-                        fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
+                        fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
                    
             elif self.kde_method == "pd":
                 for key in plot_order_kde:
@@ -206,7 +206,7 @@ class kde:
                         ax[cnt].grid(which = 'major', alpha = 0.5)
 
                         if save:
-                            fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
                                 
             elif self.kde_method == "sklearn":
                 for key in plot_order_kde:
@@ -232,7 +232,7 @@ class kde:
                         cnt += 1
 
                     if save:
-                        fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches = 'tight')
+                        fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches ='tight')
                               
         if self.dataset == "sig":
             if self.kde_method == "scipy":
@@ -256,7 +256,7 @@ class kde:
                         plt.close()
                         
                     if save:
-                        fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
+                        fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
                         
                     
             elif self.kde_method == "pd":
@@ -288,7 +288,7 @@ class kde:
                         ax[cnt].grid(which='major', alpha=0.5)
 
                         if save:
-                            fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
                                 
             elif self.kde_method == "sklearn":
                 for key in self.sig_dir:
@@ -314,7 +314,7 @@ class kde:
                         cnt += 1
 
                     if save:
-                        fig.savefig(dataDir + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
+                        fig.savefig(data_directory + key + "/" + key + "_kde_1D_%s.pdf" % self.kde_method, bbox_inches='tight')
                     
     def total_bkg_1D(self, sf = True):
         if sf:
@@ -442,7 +442,7 @@ class kde:
             ax[cnt].set_ylim(0, 2)
             
             if save:
-                fig.savefig(dataDir + "total_background_A0_A1_kde_1D.pdf", bbox_inches = 'tight')
+                fig.savefig(data_directory + "total_background_A0_A1_kde_1D.pdf", bbox_inches ='tight')
             cnt += 1
         
     def plot_kde_2D(self, style = "filled", verbose = False, save = True):
@@ -469,9 +469,9 @@ class kde:
                     
                     if save:
                         if style == "filled": 
-                            fig.savefig(dataDir + key + "/" + key + "_kde_2D_filled-contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches = 'tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_2D_filled-contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches ='tight')
                         elif style == "contour":
-                            fig.savefig(dataDir + key + "/" + key + "_kde_2D_contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches = 'tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_2D_contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches ='tight')
                             
         if self.dataset == "sig":
             if self.kde_method == "scipy" or self.kde_method == "sklearn":
@@ -494,9 +494,9 @@ class kde:
                     plt.show()
                     if save:
                         if style == "filled": 
-                            fig.savefig(dataDir + key + "/" + key + "_kde_2D_filled-contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches = 'tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_2D_filled-contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches ='tight')
                         elif style == "contour":
-                            fig.savefig(dataDir + key + "/" + key + "_kde_2D_contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches = 'tight')
+                            fig.savefig(data_directory + key + "/" + key + "_kde_2D_contour_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches ='tight')
     
     def plot_total_kde_2D(self, verbose = False, save = True):
         
@@ -526,14 +526,14 @@ class kde:
                 
                 if np.array(list(self.kde_2Dmethod.values())).all() == 0:
                     if save:
-                        fig.savefig(dataDir + "_kde_total_2D_method_0.pdf", bbox_inches = 'tight')
+                        fig.savefig(data_directory + "_kde_total_2D_method_0.pdf", bbox_inches ='tight')
                 elif np.array(list(self.kde_2Dmethod.values())).all() == 1:
                     if save:
-                        fig.savefig(dataDir + "_kde_total_2D_method_1.pdf", bbox_inches = 'tight')
+                        fig.savefig(data_directory + "_kde_total_2D_method_1.pdf", bbox_inches ='tight')
                 else:
-                    print(colors.YELLOW + "Not all 2D KDEs performed using the same method, saving as " + dataDir + "_kde_total_background_2D_method_0and1.pdf" + colors.ENDC)
+                    print(colors.YELLOW + "Not all 2D KDEs performed using the same method, saving as " + data_directory + "_kde_total_background_2D_method_0and1.pdf" + colors.ENDC)
                     if save:
-                        fig.savefig(dataDir + "_kde_total_background_2D_method_0and1.pdf", bbox_inches = 'tight')
+                        fig.savefig(data_directory + "_kde_total_background_2D_method_0and1.pdf", bbox_inches ='tight')
     
     def french_flag(self, total_bkg_kde_2D, contour = False, verbose = False, save = True):
         if self.kde_method == "bkg":
@@ -571,7 +571,7 @@ class kde:
             ax.set_title(r'Ratio $S/\sqrt{B}, m_{Z_{D}} = %s, m_{f_{D1}} = %s$ GeV' % (key.split("_")[1], key.split("_")[2]))
             
             if save:
-                fig.savefig(dataDir + key + "/" + key + "_french_flag_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches = 'tight')
+                fig.savefig(data_directory + key + "/" + key + "_french_flag_method_%d.pdf" % self.kde_2Dmethod[key], bbox_inches ='tight')
 
     '''
     def calc_total_sig_2D(self, samples, verbose = False, ret = True):

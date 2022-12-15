@@ -1,20 +1,17 @@
+import json
+from MLtools.xgb_v3 import xgb as new_xgb
+import os
+import pandas as pd
+import pprint
+import sys
+import time
+from tqdm import tqdm
 from tuning.hyper_parameter_tuning_xgb import xgb
 from tuning.plotting import plot_data, heat_map
-from utilities.utilities import process_data
-from MLtools.xgb_v3 import xgb as new_xgb
-import json
-import time
-import pprint
-import pandas as pd
-import os
-from tqdm import tqdm
+sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
+from utilities import process_data
 import warnings
 
-# root_file = (
-#     "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
-# )
-# root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
-# resultDir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/MZD_200_55_pd_model"
 parent_directory = "/Volumes/SA Hirsch/Florida Tech/research/dataframes"
 
 """
@@ -324,19 +321,17 @@ def run_xgb(final_array, zd_mass, fd1_mass, result_dir, optimal=False):
                             )
 
 
-def run_on_all(all_models=False):
-    preprocessed_dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframe_csv_fD_model"
-    zd_mass = None
-    fd1_mass = None
-    path_dict = {}
-    model_list = []
-    default_list = []
-    optimal_list = []
+def run_on_all():
+    all_models = False
+    zd_mass, fd1_mass = None, None
+    pre_processed_csv = "/Volumes/SA Hirsch/Florida Tech/research/sorted_csv_list_mine.json"
 
-    with open(
-        "/Volumes/SA Hirsch/Florida Tech/research/sorted_csv_list_mine.json"
-    ) as json_file:
+    """
+        Input the path to the csv file that contains all of the preprocessed data csv lists.
+    """
+    with open(pre_processed_csv) as json_file:
         path_dict = json.load(json_file)
+
     temp_path = {}
     if not all_models:
         for outer in path_dict:
@@ -374,7 +369,6 @@ def run_on_all(all_models=False):
     all_models_list = []
     overall_time = time.time()
     for outer in path_dict:
-        # dict_of_model_direct = outer
         parent_dir = parent + outer
         try:
             os.makedirs(parent_dir)
@@ -400,7 +394,6 @@ def run_on_all(all_models=False):
 
             data = pd.read_csv(path_dict[outer][inner])
             warnings.filterwarnings("ignore")
-            start = time.time()
             filename = "MZD_%s_%s" % (zd_mass, fd1_mass)
             boost = new_xgb("mc", filename)
             old_boost = xgb("mc")
@@ -494,15 +487,19 @@ def draw_tree():
     root_file = (
         "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
     )
-    root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
-    final_array = process(root_file, root_dir)
-    boost = xgb("mc")
-    boost.split(final_array)
+
+    """
+        Give directory of list of models that the tree is to be constructed from.
+    """
 
     directory = (
         "/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102522_346PM/"
         "MZD_200_55_pd_model/model_list.json"
     )
+    root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
+    final_array = process(root_file, root_dir)
+    boost = xgb("mc")
+    boost.split(final_array)
 
     f = open(directory)
     data = json.load(f)
@@ -518,6 +515,9 @@ def draw_tree():
     val_obj = value["objective"]
     zd_mass, fd_mass, result_directory = find_masses(root_file, True)
 
+    """
+        Construct most effective model, and build the tree based on those values.
+    """
     _ = boost.xgb(
         zd_mass=zd_mass,
         fd1_mass=fd_mass,

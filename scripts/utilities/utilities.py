@@ -7,8 +7,8 @@ from uproot import open as openUp # Transfer ROOT data into np arrays
 import numpy as np
 import sys
 import os
-sys.path.insert(0, "/Volumes/EASYSTORE/fD_model/utilities/")
-from utilities.file_utils import *
+sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
+from file_utils import *
 
 global resultDir
 global cutflow_dir
