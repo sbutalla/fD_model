@@ -15,7 +15,7 @@ To process simulated or real data (previously run through the CutFlow analyzer),
 To process `ROOT` files, we instantiate the `processData` class. For case 1 (`'mc'` samples):
 
 ```
-data.processData('mc')
+data = processData('mc')
 ```
 
 To extract data, we use the `extract_data()` method:
@@ -52,7 +52,7 @@ for each event:
 data.ssm()
 ```
 
-To apply the cut on the dR between the GEN and SEL muons in each dimuon:
+To apply the cut on the dR *__between the GEN and SEL muons__* in each dimuon:
 
 ```
 data.dR_cut()
@@ -70,5 +70,40 @@ Now, to calculate the invariant mass, we call
 data.inv_mass_calc()
 ```
 
-For the final, "official" slection of the four final-state muons for each event, we then calculate the dR and dphi betwen the muons in the dimuon pair.
+For the final, "official" slection of the four final-state muons for each event, we calculate the dR and dphi between the muons in each dimuon pair by executing:
+
+```
+data.dR_diMu()
+```
+
+To calculate the event shape variables, run
+
+```
+data.event_shapes()
+```
+
+To get the final result in `.csv` format, we execute:
+
+```
+final_array = data.fill_and_sort(save=True)
+```
+
+This procedure is very similar for the other MC/real data signal-like dataset types. For example, the full command chain to process the signal (`'sig'`) datasets and the n-tuple (`'ntuple'`) datasets contains all of the same commands *except* the commands where the dR between the GEN and SEL level muons are computed, or where cuts are made on GEN level information. (This is because GEN level information is not present in the `ROOT` file.) For either the 'sig'` or `'ntuple'`  datasets, the following chain is appropriate:
+
+```
+data = processData('sig') # or 'ntuple'
+data.prelim_cuts()
+data.match_bkg_mu()
+data.dR_cut(dRcut, cut)
+data.permutations()
+data.inv_mass_calc()
+data.dR_diMu()
+final_array = data.fill_and_sort(save = True)
+```
+
+The main difference in processing ROOT filelies in the `bkg` (background) datasets
+
+
+
+
   
