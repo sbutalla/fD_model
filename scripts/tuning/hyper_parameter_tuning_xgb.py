@@ -6,19 +6,14 @@ from sklearn.metrics import accuracy_score, matthews_corrcoef
 import sys
 import os
 import json
-from xgboost import plot_tree
 from sklearn.model_selection import train_test_split
-import graphviz
 from tuning.parameter_processing import Process
-from tuning.model import Model
 import time
-import xgboost
-from sklearn import tree as sktree
 import warnings
 
 from tuning.model_per_sample import ModelPerSample
 
-'''
+"""
     Cleaned up version of xgb_plusplus.py for hyperparameter tuning. This version of the class is used
     strictly for tuning, all edits conflict wiht the original purpose of xg_plusplus.py. For organization 
     this new file was created so that it would be able to be added to the original repository.
@@ -27,10 +22,11 @@ from tuning.model_per_sample import ModelPerSample
     parameters and dumps the history and classification report. As well as, create a new object to store
     a summary of the important information from the model. This includes the parameters as well as the
     necessary metrics in determining the efficiency of the model.
-'''
+"""
 
 
 resultDir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/"
+
 
 class colors:
     WHITE = "\033[97m"
@@ -147,9 +143,32 @@ class xgb:
 
         self.testX = pd.DataFrame(
             X_test,
-            columns=["selpT0", "selpT1", "selpT2", "selpT3", "selEta0", "selEta1", "selEta2", "selEta3", "selPhi0",
-                     "selPhi1", "selPhi2", "selPhi3", "selCharge0", "selCharge1", "selCharge2", "selCharge3", "dPhi0",
-                     "dPhi1", "dRA0", "dRA1", "event", "invMassA0", "invMassA1"],)
+            columns=[
+                "selpT0",
+                "selpT1",
+                "selpT2",
+                "selpT3",
+                "selEta0",
+                "selEta1",
+                "selEta2",
+                "selEta3",
+                "selPhi0",
+                "selPhi1",
+                "selPhi2",
+                "selPhi3",
+                "selCharge0",
+                "selCharge1",
+                "selCharge2",
+                "selCharge3",
+                "dPhi0",
+                "dPhi1",
+                "dRA0",
+                "dRA1",
+                "event",
+                "invMassA0",
+                "invMassA1",
+            ],
+        )
 
         self.trainY = pd.DataFrame(
             y_train, columns=["event", "invmA0", "invmA1", "pair"]
@@ -164,30 +183,38 @@ class xgb:
             return None
 
     def xgb(
-            self,
-            zd_mass,
-            fd1_mass,
-            resultDir,
-            trainX=None,
-            testX=None,
-            trainY=None,
-            testY=None,
-            met=True,
-            save=True,
-            filename="MZD_200_55_pd_model.sav",
-            single_pair=False,
-            ret=True,
-            verbose=True,
-            saveFig=True,
-            eta=None,
-            max_depth=None,
-            booster='gbtree',
-            reg_alpha=None,
-            reg_lambda=None,
-            tree=False,
-            objective=None,
-            ret_mod=True
+        self,
+        zd_mass,
+        fd1_mass,
+        resultDir,
+        trainX,
+        testX,
+        trainY,
+        testY,
+        eta,
+        max_depth,
+        reg_lambda,
+        reg_alpha,
+        objective,
+        met=True,
+        save=True,
+        single_pair=False,
+        ret=True,
+        verbose=True,
+        saveFig=True,
+        booster="gbtree",
+        tree=False,
+        ret_mod=True,
     ):
+        if trainX.empty and trainY.empty and testX.empty and testY.empty:
+            trainX = self.trainX
+            trainY = self.trainY
+            testX = self.testX
+            testY = self.testY
+            empty = True
+        else:
+            empty = False
+
 
         # print("\n\n")
         # print(60 * "*")
@@ -197,8 +224,10 @@ class xgb:
         proc = Process()
         global dataDir
         if self.dataset == "mc":
-            mc_model = filename.split(".")[0]
-            dataDir = proc.select_file(eta, max_depth, resultDir, mc_model, reg_lambda, reg_alpha, objective)
+            # mc_model = filename.split(".")[0]
+            dataDir = proc.select_file(
+                eta, max_depth, resultDir, reg_lambda, reg_alpha, objective
+            )
             try:
                 os.makedirs(dataDir)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
@@ -221,13 +250,18 @@ class xgb:
         start = time.time()
         eval_set = [(trainX, trainY), (testX, testY)]
         # model.fit(trainX, trainY, eval_metric = [])
-        model.fit(trainX, trainY, early_stopping_rounds=10,
-                  eval_metric=["logloss", "error", "auc"], eval_set=eval_set,
-                  verbose=False)
+        model.fit(
+            trainX,
+            trainY,
+            early_stopping_rounds=10,
+            eval_metric=["logloss", "error", "auc"],
+            eval_set=eval_set,
+            verbose=False,
+        )
         end = time.time()
 
         if tree:
-            filename = resultDir + 'MZD_200_55_pd_model/effective_model_tree'
+            filename = resultDir + "MZD_200_55_pd_model/effective_model_tree"
             #
             # dot_data = sktree.export_graphviz(model)
             # graph = graphviz.Source(dot_data, format="png")
@@ -245,7 +279,7 @@ class xgb:
 
         if save:
             # save the model to disk
-            joblib.dump(model, filename)
+            joblib.dump(model, resultDir + "/effective_model_tree")
 
         if met:
             # predictedY = model.predict(self.testX)
@@ -258,59 +292,52 @@ class xgb:
             # Testing, original
             class_out = dataDir + "/classification_report.json"
             out_file = open(class_out, "w")
-            #class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
-            class_report = dict(classification_report(testY, predictedY, output_dict=True))
-            class_report['parameters'] = {'eta': eta, 'max_depth': max_depth, 'booster': booster,
-                                          'l1': reg_alpha, 'l2': reg_lambda, 'objective': objective}
+            # class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
+            class_report = dict(
+                classification_report(testY, predictedY, output_dict=True)
+            )
+            class_report["parameters"] = {
+                "eta": eta,
+                "max_depth": max_depth,
+                "booster": booster,
+                "l1": reg_alpha,
+                "l2": reg_lambda,
+                "objective": objective,
+            }
             # class_report['mcc'] = matthews_corrcoef(self.testY, predictedY)
-            class_report['mcc'] = matthews_corrcoef(testY, predictedY)
+            class_report["mcc"] = matthews_corrcoef(testY, predictedY)
             json.dump(class_report, out_file)
 
-
-
-            '''
+            """
                 Filling the object that stores all of the data. Store the objects in a list to be sorted
                 and outputted. Add to the model object for other parameters that will be tested.
 
                 Booster?
                 Check notebook for others.
-            '''
+            """
             mod = ModelPerSample()
             mod.zD = zd_mass
             mod.fD1 = fd1_mass
-            mod.eta = class_report['parameters']['eta']
-            mod.max_depth = class_report['parameters']['max_depth']
-            mod.booster = class_report['parameters']['booster']
-            mod.accuracy = class_report['accuracy']
-            mod.mcc = class_report['mcc']
+            mod.eta = class_report["parameters"]["eta"]
+            mod.max_depth = class_report["parameters"]["max_depth"]
+            mod.booster = class_report["parameters"]["booster"]
+            mod.accuracy = class_report["accuracy"]
+            mod.mcc = class_report["mcc"]
             mod.time = total_time
-            mod.f1 = class_report['1']['f1-score']
-            mod.precision = class_report['1']['precision']
-            mod.reg_alpha = class_report['parameters']['l1']
-            mod.reg_lambda = class_report['parameters']['l2']
-            mod.objective = class_report['parameters']['objective']
+            if empty:
+                mod.f1 = class_report["1.0"]["f1-score"]
+                mod.precision = class_report["1.0"]["precision"]
+            else:
+                mod.f1 = class_report["1"]["f1-score"]
+                mod.precision = class_report["1"]["precision"]
+            mod.reg_alpha = class_report["parameters"]["l1"]
+            mod.reg_lambda = class_report["parameters"]["l2"]
+            mod.objective = class_report["parameters"]["objective"]
             mod.auc = mod_auc
 
             mod_out = dataDir + "/model.json"
             out_file = open(mod_out, "w")
             json.dump(mod.get_model(), out_file)
-
-
-
-
-            # mod = Model()
-            # mod.set_eta(class_report['parameters']['eta'])
-            # mod.set_max_depth(class_report['parameters']['max_depth'])
-            # mod.set_booster(class_report['parameters']['booster'])
-            # mod.set_accuracy(class_report['accuracy'])
-            # mod.set_mcc(class_report['mcc'])
-            # mod.set_time(total_time)
-            # mod.set_f1(class_report['1']['f1-score'])
-            # mod.set_precision(class_report['1']['precision'])
-            # mod.set_reg_alpha(class_report['parameters']['l1'])
-            # mod.set_reg_lambda(class_report['parameters']['l2'])
-            # mod.set_objective(class_report['parameters']['objective'])
-            # xgb.model_list.append(mod)
 
             if ret_mod:
                 return mod

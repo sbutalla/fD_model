@@ -10,7 +10,7 @@ class Process:
         and hard to maintain.
     '''
 
-    def select_file(self, eta, max_depth, resultDir, mc_model, reg_lambda, reg_alpha, objective):
+    def select_file(self, eta, max_depth, resultDir, reg_lambda, reg_alpha, objective):
         # if eta == 0.3:
         #     data_dir = resultDir + '/default'
         # else:

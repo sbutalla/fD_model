@@ -14,7 +14,8 @@ import warnings
 #     "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
 # )
 # root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
-resultDir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/MZD_200_55_pd_model"
+# resultDir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/MZD_200_55_pd_model"
+parent_directory = "/Volumes/SA Hirsch/Florida Tech/research/dataframes"
 
 """
     Function that deals with processing data. Utilizes the process_data class from the utilities 
@@ -47,11 +48,17 @@ def process(root_file, root_dir):
     return final_array
 
 
-"""
-    Function handles data processing for building the various xgboost models for analysis. Stores the data in
-    their respective files and directories. Calls all of the necessary functions and creates all objects
-    used for analysis. Driver function to collect all data for further analysis. 
-"""
+def find_masses(root_file, root_file_bool):
+    zd_mass, fd_mass, result_directory = "", "", ""
+    if root_file_bool:
+        zd_mass = root_file.split("/")[-1].split("_")[1]
+        fd_mass = root_file.split("/")[-1].split("_")[2].split(".")[0]
+        result_directory = (
+                parent_directory + "/MZD_%s_%s_fd_model"
+                % (zd_mass, fd_mass)
+        )
+
+    return zd_mass, fd_mass, result_directory
 
 
 """
@@ -62,16 +69,17 @@ def process(root_file, root_dir):
 
 
 def process_single():
+    # Setting up file system
     root_file = (
         "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
     )
     root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
-    find_zd_mass = root_file.split("/")[-1].split("_")[1]
-    find_fd_mass = root_file.split("/")[-1].split("_")[2].split(".")[0]
-    result_dir = (
-        "/Volumes/SA Hirsch/Florida Tech/research/dataframes/MZD_%s_%s_fd_model"
-        % (find_zd_mass, find_fd_mass)
-    )
+    zd_mass, fd_mass, result_directory = find_masses(root_file, True)
+
+    """
+        In the case of the root file, extract all of the necessary data and store it into a dataframe for
+        training the xgboost model. In the case of preprocessed data this has already been taken care of.
+    """
 
     warnings.filterwarnings("ignore")
     start = time.time()
@@ -84,7 +92,6 @@ def process_single():
         testing.
     """
 
-    booster_list = ["gbtree", "dart"]  # Determined gbtree is best
     alpha_array = [0, 1, 2, 3, 4, 5]  # L1 Regularization
     lambda_array = [0, 1, 2, 3, 4, 5]  # L2 Regularization
     eta_array = [0.6, 0.5, 0.4, 0.3, 0.1]  # Learning rate
@@ -92,7 +99,7 @@ def process_single():
     objective_array = ["binary:logistic", "binary:hinge", "reg:squarederror"]
 
     """
-        Iterate through the specified values in the arrays that contain the values to be tested.
+        Construct each model to be stored for 
     """
 
     for val_eta in tqdm(eta_array):
@@ -101,19 +108,25 @@ def process_single():
                 for val_obj in objective_array:
                     for val_max_depth in max_depth_array:
                         _ = boost.xgb(
-                            zd_mass=find_zd_mass,
-                            fd1_mass=find_fd_mass,
-                            resultDir=result_dir,
-                            single_pair=True,
-                            ret=True,
+                            zd_mass=zd_mass,
+                            fd1_mass=fd_mass,
+                            resultDir=result_directory,
+                            trainX=pd.DataFrame(),
+                            testX=pd.DataFrame(),
+                            trainY=pd.DataFrame(),
+                            testY=pd.DataFrame(),
                             eta=val_eta,
                             max_depth=val_max_depth,
                             reg_lambda=val_lambda,
                             reg_alpha=val_alpha,
                             objective=val_obj,
+                            single_pair=True,
+                            ret=True,
                         )
 
-    boost.model_list.sort(key=lambda x: (x.mcc, x.accuracy), reverse=True)
+    boost.model_list.sort(
+        key=lambda x: (x.mcc, x.accuracy), reverse=True
+    )  # Sort based on important values
 
     obj_list = []
     for val in boost.model_list:
@@ -121,7 +134,7 @@ def process_single():
 
     print("Completed.")
 
-    class_out = result_dir + "/model_list.json"
+    class_out = result_directory + "/model_list.json"
     out_file = open(class_out, "w")
     json.dump(obj_list, out_file, indent=4)
 
@@ -129,59 +142,23 @@ def process_single():
     total = end - start
     t_hours = (total / 60) / 60
 
-    class_out = result_dir + "/time.json"
+    class_out = result_directory + "/time.json"
     out_file = open(class_out, "w")
     json.dump(t_hours, out_file)
     print(t_hours)
 
 
-def draw_tree():
-    final_array = process()
-    boost = xgb("mc")
-    boost.split(final_array)
-
-    dir = (
-        "/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102522_346PM/"
-        "MZD_200_55_pd_model/model_list.json"
-    )
-
-    f = open(dir)
-    data = json.load(f)
-    data = sorted(data, key=lambda x: x["mcc"], reverse=True)
-    pprint.pprint(data)
-
-    value = data[0]
-
-    val_eta = value["eta"]
-    val_max_depth = value["max depth"]
-    val_alpha = value["l1"]
-    val_lambda = value["l2"]
-
-    _ = boost.xgb(
-        single_pair=True,
-        ret=True,
-        eta=val_eta,
-        max_depth=val_max_depth,
-        reg_lambda=val_lambda,
-        reg_alpha=val_alpha,
-        tree=True,
-    )
-
-
-def pre_processed(all_models=False):
-    preprocessed_dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframe_csv_fD_model"
-    zd_mass = None
-    fd1_mass = None
-    path_dict = {}
-    model_list = []
-    default_list = []
-    optimal_list = []
+def pre_processed():
+    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/optimized_all/"
+    all_models = False
+    model_list, default_list, optimal_list = [], [], []
 
     with open(
         "/Volumes/SA Hirsch/Florida Tech/research/sorted_csv_list_mine.json"
     ) as json_file:
         path_dict = json.load(json_file)
     temp_path = {}
+
     if not all_models:
         for outer in path_dict:
             if outer in str([85, 95, 150, 200, 300, 400]):
@@ -197,7 +174,6 @@ def pre_processed(all_models=False):
 
         path_dict = temp_path
 
-    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/optimized_all/"
     dict_of_model_direct = {}
     for outer in path_dict:
         # dict_of_model_direct = outer
@@ -265,15 +241,6 @@ def pre_processed(all_models=False):
     optimal_out = parent + "optimal_model_list.json"
     optimal_out_file = open(optimal_out, "w")
     json.dump(optimal_obj, optimal_out_file, indent=4)
-
-    # end = time.time()
-    # total = end - start
-    # t_hours = (total / 60) / 60
-
-    # class_out = resultDir + "/time.json"
-    # out_file = open(class_out, "w")
-    # json.dump(t_hours, out_file)
-    # print(t_hours)
 
 
 def run_xgb(final_array, zd_mass, fd1_mass, result_dir, optimal=False):
@@ -347,13 +314,13 @@ def run_xgb(final_array, zd_mass, fd1_mass, result_dir, optimal=False):
                                 testX,
                                 trainY,
                                 testY,
-                                single_pair=True,
-                                ret=True,
                                 eta=val_eta,
                                 max_depth=val_max_depth,
                                 reg_lambda=val_lambda,
                                 reg_alpha=val_alpha,
                                 objective=val_obj,
+                                single_pair=True,
+                                ret=True,
                             )
 
 
@@ -515,6 +482,61 @@ def run_on_all(all_models=False):
 
 
 """
+    Draw the outputted tree that is constructed from the model. Useful to better help visualize how the tree
+    is making its decisions. 
+"""
+
+
+def draw_tree():
+    '''
+        Construct the tree based off the supplied root file.
+    '''
+    root_file = (
+        "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
+    )
+    root_dir = "cutFlowAnalyzerPXBL4PXFL3;1/Events;1"
+    final_array = process(root_file, root_dir)
+    boost = xgb("mc")
+    boost.split(final_array)
+
+    directory = (
+        "/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102522_346PM/"
+        "MZD_200_55_pd_model/model_list.json"
+    )
+
+    f = open(directory)
+    data = json.load(f)
+    data = sorted(data, key=lambda x: x["mcc"], reverse=True)
+    pprint.pprint(data)
+
+    value = data[0]
+
+    val_eta = value["eta"]
+    val_max_depth = value["max depth"]
+    val_alpha = value["l1"]
+    val_lambda = value["l2"]
+    val_obj = value["objective"]
+    zd_mass, fd_mass, result_directory = find_masses(root_file, True)
+
+    _ = boost.xgb(
+        zd_mass=zd_mass,
+        fd1_mass=fd_mass,
+        resultDir=result_directory,
+        trainX=pd.DataFrame(),
+        testX=pd.DataFrame(),
+        trainY=pd.DataFrame(),
+        testY=pd.DataFrame(),
+        eta=val_eta,
+        max_depth=val_max_depth,
+        reg_lambda=val_lambda,
+        reg_alpha=val_alpha,
+        objective=val_obj,
+        single_pair=True,
+        ret=True,
+    )
+
+
+"""
     Driver function that handles each respective function. Takes input from the standard input stream
     and calls each function for its desired ability specified by the user. Makes the code much cleaner 
     and more concise.
@@ -523,8 +545,12 @@ def run_on_all(all_models=False):
 
 def main():
     print(
-        "Which program would you like to use:\n(1): Generate permutations of models \n(2): Generate Heat Map "
-        "\n(3): Plot data \n(4): Output tree\n(5): Run all models\n"
+        "Which program would you like to use:\
+        \n(1): Generate permutations of models \
+        \n(2): Generate Heat Map \
+        \n(3): Plot data \
+        \n(4): Output tree \
+        \n(5): Run all models\n"
     )
 
     choice = input("Choice: ")
