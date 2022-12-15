@@ -1,17 +1,17 @@
-import matplotlib.pyplot as plt
-import pandas as pd
 import joblib
+import json
+import matplotlib.pyplot as plt
+import os
+import pandas as pd
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.metrics import accuracy_score, matthews_corrcoef
-import sys
-import os
-import json
 from sklearn.model_selection import train_test_split
-from tuning.parameter_processing import Process
+import sys
 import time
+from tuning.model import Model
 import warnings
+from xgboost import XGBClassifier
 
-from tuning.model_per_sample import ModelPerSample
 
 """
     Cleaned up version of xgb_plusplus.py for hyperparameter tuning. This version of the class is used
@@ -215,17 +215,11 @@ class xgb:
         else:
             empty = False
 
-
-        # print("\n\n")
-        # print(60 * "*")
-        # print(colors.GREEN + "Building the XGBoost model and training" + colors.ENDC)
-        # print(60 * "*")
         warnings.filterwarnings("ignore")
-        proc = Process()
         global dataDir
         if self.dataset == "mc":
             # mc_model = filename.split(".")[0]
-            dataDir = proc.select_file(
+            dataDir = self.select_file(
                 eta, max_depth, resultDir, reg_lambda, reg_alpha, objective
             )
             try:
@@ -245,7 +239,7 @@ class xgb:
             except FileExistsError:  # skip if directory already exists
                 pass
 
-        model = proc.select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
+        model = self.select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
 
         start = time.time()
         eval_set = [(trainX, trainY), (testX, testY)]
@@ -315,7 +309,7 @@ class xgb:
                 Booster?
                 Check notebook for others.
             """
-            mod = ModelPerSample()
+            mod = Model()
             mod.zD = zd_mass
             mod.fD1 = fd1_mass
             mod.eta = class_report["parameters"]["eta"]
@@ -346,3 +340,32 @@ class xgb:
                 return None
 
         return None
+
+    def select_model(
+            eta, max_depth, reg_lambda, reg_alpha, objective
+    ) -> XGBClassifier:
+        warnings.filterwarnings("ignore")
+        if eta == 0.6:
+            model = XGBClassifier(
+                eval_metric=["logloss", "error", "auc"],
+                random_state=7,
+                eta=eta,
+                max_depth=max_depth,
+                reg_lambda=reg_lambda,
+                reg_alpha=reg_alpha,
+                objective=objective,
+            )
+        else:
+            model = XGBClassifier(
+                random_state=7, eval_metric=["logloss", "error", "auc"]
+            )
+
+        return model
+
+
+    def select_file(eta, max_depth, result_dir, reg_lambda, reg_alpha, objective):
+        data_dir = result_dir + (
+            "/eta_%s/max_depth_%s/l1_%s/l2_%s/objective_%s"
+            % (eta, max_depth, reg_alpha, reg_lambda, objective)
+        )
+        return data_dir
