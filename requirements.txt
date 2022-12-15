@@ -1,0 +1,13 @@
+graphviz==0.20.1
+joblib==1.2.0
+keras_sequential_ascii==0.1.1
+matplotlib==3.6.0
+numpy==1.22.4
+pandas==1.5.0
+scikit_learn==1.2.0
+scipy==1.9.1
+seaborn==0.12.1
+tensorflow==2.11.0
+tqdm==4.64.1
+uproot==4.3.5
+xgboost==1.2.0
