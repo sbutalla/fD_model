@@ -173,7 +173,6 @@ def pre_processed():
 
     dict_of_model_direct = {}
     for outer in path_dict:
-        # dict_of_model_direct = outer
         parent_dir = parent + "/" + outer
         try:
             os.makedirs(parent_dir)

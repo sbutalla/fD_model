@@ -81,11 +81,11 @@ def heat_map(metric):
     # Declaration and initialization of vmin and vmax.
     vmin = 0
     vmax = 1
-    if metric is "f1":
+    if metric == "f1":
         vmin = 0.8
-    elif metric is "mcc":
+    elif metric == "mcc":
         vmin = 0.7
-    elif metric is "time":
+    elif metric == "time":
         vmin = 1
         vmax = 11
 
@@ -134,13 +134,10 @@ def heat_map(metric):
         index += 1
 
     value_array.reverse()  # Reverse the array storing all of the values
-    # value_array = np.array(value_array, dtype=object)     # Convert to numpy array
     value_array = np.array(value_array)  # Convert to numpy array
-    # print(value_array)
 
     plt.rcParams.update({"font.size": 14})  # Increase font size for plotting
     fig, ax = plt.subplots(figsize=(40, 4))  # Initialize plot
-    # im = ax.imshow(value_array)
     im = ax.imshow(value_array, vmin=vmin, vmax=vmax)
     ax.set_xlabel(r"Learning rate ($\eta$)", loc="right")
     ax.set_ylabel("Max depth", loc="top")
@@ -161,7 +158,7 @@ def heat_map(metric):
 
     for i in range(len(max_depth_array)):
         for j in range(len(eta_array)):
-            if metric is not "time":
+            if metric != "time":
                 text = ax.text(
                     j,
                     i,
