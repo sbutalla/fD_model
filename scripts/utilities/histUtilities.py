@@ -16,7 +16,7 @@ global scale_factors_sig
 global plot_order
 global color_list
 global color_sig
-global dataDir
+global data_directory
 global signalDir
 
 numBins           = 17
@@ -124,7 +124,7 @@ color_list       = {
 "ggHToZZTo4L" : "cyan",
 "ggToZZTo4mu" : "magenta"}
 
-dataDir   = "dataframes/"
+data_directory   = "dataframes/"
 
 plt.rcParams.update({'font.size': 26}) # Increase font size for plots
 
@@ -158,7 +158,7 @@ class histogram:
             if csv_type == "single":
                 single_correct_pair_all = {} # initialize dictionary
                 for ii in range(len(plot_order)):
-                    temp_file = dataDir + plot_order[ii] + "/single_correct_pair_%s.csv" % plot_order[ii]
+                    temp_file = data_directory + plot_order[ii] + "/single_correct_pair_%s.csv" % plot_order[ii]
                     single_correct_pair_all[plot_order[ii]] = pd.read_csv(temp_file)
 
                 self.from_csv_single = True
@@ -167,7 +167,7 @@ class histogram:
             if csv_type == "single":
                 single_correct_pair_all = {} # initialize dictionary
                 for dataset in range(len(self.sig_dir)):
-                    temp_file = dataDir + self.sig_dir[dataset] + "/single_correct_pair_%s.csv" % self.sig_dir[dataset]
+                    temp_file = data_directory + self.sig_dir[dataset] + "/single_correct_pair_%s.csv" % self.sig_dir[dataset]
                     single_correct_pair_all[self.sig_dir[dataset]] = pd.read_csv(temp_file)
 
                 self.from_csv_single = True
@@ -311,7 +311,7 @@ class histogram:
                 plt.show()
                 
                 if save:
-                    plt.savefig(dataDir + "all_bkg_hist_diMu_%s.pdf" % pair)
+                    plt.savefig(data_directory + "all_bkg_hist_diMu_%s.pdf" % pair)
 
                 mu_cnt += 1
         elif self.dataset == "sig":
@@ -334,7 +334,7 @@ class histogram:
                     plt.show()
                     
                     if save:
-                        plt.savefig(dataDir + key + "/signal_%s_hist_diMu_%s.pdf" % (key, pair))
+                        plt.savefig(data_directory + key + "/signal_%s_hist_diMu_%s.pdf" % (key, pair))
 
                     mu_cnt += 1
         
@@ -387,7 +387,7 @@ class histogram:
             axHisty.set_xlim(0, 10)
             
             if save:
-                plt.savefig(dataDir + "/hist_2D_all_bkg.pdf")
+                plt.savefig(data_directory + "/hist_2D_all_bkg.pdf")
             
         elif self.dataset == "sig":
             for key in self.sig_dir:
@@ -435,7 +435,7 @@ class histogram:
                 axHisty.set_xlim(hist_range)
                 
                 if save:
-                    plt.savefig(dataDir + key + "/hist_2D_sig_%s.pdf" % key)
+                    plt.savefig(data_directory + key + "/hist_2D_sig_%s.pdf" % key)
 
 def ratio_hist(hist_2D_total_bkg, hist_2D_total_sig, histData_2d_sig, save = True):
     hist_2d_ratio = hist_2D_total_bkg / np.sqrt(hist_2D_total_sig)
@@ -489,4 +489,4 @@ def ratio_hist(hist_2D_total_bkg, hist_2D_total_sig, histData_2d_sig, save = Tru
     axHisty.set_xlim(0,200)
     
     if save:
-        plt.savefig(dataDir + "ratio_hist.pdf")
+        plt.savefig(data_directory + "ratio_hist.pdf")
