@@ -216,30 +216,29 @@ class xgb:
             empty = False
 
         warnings.filterwarnings("ignore")
-        global dataDir
+        global data_directory
         if self.dataset == "mc":
-            # mc_model = filename.split(".")[0]
-            dataDir = self.select_file(
+            data_directory = select_file(
                 eta, max_depth, resultDir, reg_lambda, reg_alpha, objective
             )
             try:
-                os.makedirs(dataDir)  # create directory for data/plots
+                os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
                 pass
         elif self.dataset == "bkg":
-            dataDir = resultDir + "/" + self.file_name
+            data_directory = resultDir + "/" + self.file_name
             try:
-                os.makedirs(dataDir)  # create directory for data/plots
+                os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
                 pass
         elif self.dataset == "sig":
-            dataDir = resultDir + "/signal_MZD_"
+            data_directory = resultDir + "/signal_MZD_"
             try:
-                os.makedirs(dataDir)  # create directory for data/plots
+                os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
                 pass
 
-        model = self.select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
+        model = select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
 
         start = time.time()
         eval_set = [(trainX, trainY), (testX, testY)]
@@ -256,11 +255,11 @@ class xgb:
 
         if tree:
             filename = resultDir + "MZD_200_55_pd_model/effective_model_tree"
-            #
+
             # dot_data = sktree.export_graphviz(model)
             # graph = graphviz.Source(dot_data, format="png")
             # graph.render(filename)
-
+            #
             # plot_tree(model)
             # fig = plt.gcf()
             # fig.set_size_inches(30, 15)
@@ -268,8 +267,6 @@ class xgb:
             # fig.show()
 
         total_time = end - start
-
-        # model.fit(self.trainX, self.trainY, early_stopping_rounds=num_of_epochs)
 
         if save:
             # save the model to disk
@@ -284,7 +281,7 @@ class xgb:
             mod_auc = roc_auc_score(testY, mod_probs)  # model (logistic) AUC
 
             # Testing, original
-            class_out = dataDir + "/classification_report.json"
+            class_out = data_directory + "/classification_report.json"
             out_file = open(class_out, "w")
             # class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
             class_report = dict(
@@ -329,7 +326,7 @@ class xgb:
             mod.objective = class_report["parameters"]["objective"]
             mod.auc = mod_auc
 
-            mod_out = dataDir + "/model.json"
+            mod_out = data_directory + "/model.json"
             out_file = open(mod_out, "w")
             json.dump(mod.get_model(), out_file)
 
@@ -341,31 +338,32 @@ class xgb:
 
         return None
 
-    def select_model(
-            eta, max_depth, reg_lambda, reg_alpha, objective
-    ) -> XGBClassifier:
-        warnings.filterwarnings("ignore")
-        if eta == 0.6:
-            model = XGBClassifier(
-                eval_metric=["logloss", "error", "auc"],
-                random_state=7,
-                eta=eta,
-                max_depth=max_depth,
-                reg_lambda=reg_lambda,
-                reg_alpha=reg_alpha,
-                objective=objective,
-            )
-        else:
-            model = XGBClassifier(
-                random_state=7, eval_metric=["logloss", "error", "auc"]
-            )
 
-        return model
-
-
-    def select_file(eta, max_depth, result_dir, reg_lambda, reg_alpha, objective):
-        data_dir = result_dir + (
-            "/eta_%s/max_depth_%s/l1_%s/l2_%s/objective_%s"
-            % (eta, max_depth, reg_alpha, reg_lambda, objective)
+def select_model(
+        eta, max_depth, reg_lambda, reg_alpha, objective
+) -> XGBClassifier:
+    warnings.filterwarnings("ignore")
+    if eta == 0.6:
+        model = XGBClassifier(
+            eval_metric=["logloss", "error", "auc"],
+            random_state=7,
+            eta=eta,
+            max_depth=max_depth,
+            reg_lambda=reg_lambda,
+            reg_alpha=reg_alpha,
+            objective=objective,
         )
-        return data_dir
+    else:
+        model = XGBClassifier(
+            random_state=7, eval_metric=["logloss", "error", "auc"]
+        )
+
+    return model
+
+
+def select_file(eta, max_depth, result_dir, reg_lambda, reg_alpha, objective):
+    data_dir = result_dir + (
+        "/eta_%s/max_depth_%s/l1_%s/l2_%s/objective_%s"
+        % (eta, max_depth, reg_alpha, reg_lambda, objective)
+    )
+    return data_dir

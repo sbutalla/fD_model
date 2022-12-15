@@ -3,11 +3,13 @@ from MLtools.xgb_v3 import xgb as new_xgb
 import os
 import pandas as pd
 import pprint
+import sys
 import time
 from tqdm import tqdm
 from tuning.hyper_parameter_tuning_xgb import xgb
 from tuning.plotting import plot_data, heat_map
-from utilities.utilities import process_data
+sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
+from utilities import process_data
 import warnings
 
 parent_directory = "/Volumes/SA Hirsch/Florida Tech/research/dataframes"
