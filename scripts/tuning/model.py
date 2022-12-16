@@ -9,8 +9,9 @@
 
 class Model:
     """
-        Constructor for the object that stores the data.
+    Constructor for the object that stores the data.
     """
+
     def __init__(self):
         self.zD = None
         self.fD1 = None
@@ -30,6 +31,7 @@ class Model:
     """
         Returns the dictionary of the object data stored in a dictionary.
     """
+
     def get_model(self):
         object_dict = {
             "zd mass": self.zD,

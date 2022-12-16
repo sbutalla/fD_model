@@ -280,7 +280,7 @@ class xgb:
 
         if ret:
             if verbose:
-                print_alert("Arrays returned:\ntrainX\ntestX\ntrainY\ntestY")
+                print_alert("Arrays returned:\ntrainX\ntest_X\ntrainY\ntestY")
 
             return self.trainX, self.testX, self.trainY, self.testY
 

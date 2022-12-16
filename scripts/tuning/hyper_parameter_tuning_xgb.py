@@ -25,7 +25,7 @@ from xgboost import XGBClassifier
 """
 
 
-resultDir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/"
+result_dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/"
 
 
 class colors:
@@ -66,7 +66,7 @@ class xgb:
                 self.file_name = file_name
 
         try:
-            os.makedirs(resultDir)  # create directory for results
+            os.makedirs(result_dir)  # create directory for results
         except FileExistsError:  # skip if directory already exists
             pass
 
@@ -141,7 +141,7 @@ class xgb:
         )
         # self.trainX = self.trainX.drop(['event'], axis = 1)
 
-        self.testX = pd.DataFrame(
+        self.test_x = pd.DataFrame(
             X_test,
             columns=[
                 "selpT0",
@@ -170,15 +170,17 @@ class xgb:
             ],
         )
 
-        self.trainY = pd.DataFrame(
+        self.train_y = pd.DataFrame(
             y_train, columns=["event", "invmA0", "invmA1", "pair"]
         )
-        self.trainY = self.trainY.drop(["event", "invmA0", "invmA1"], axis=1)
-        self.testY = pd.DataFrame(y_test, columns=["event", "invmA0", "invmA1", "pair"])
-        self.testY = self.testY.drop(["event", "invmA0", "invmA1"], axis=1)
+        self.train_y = self.train_y.drop(["event", "invmA0", "invmA1"], axis=1)
+        self.test_y = pd.DataFrame(
+            y_test, columns=["event", "invmA0", "invmA1", "pair"]
+        )
+        self.test_y = self.test_y.drop(["event", "invmA0", "invmA1"], axis=1)
 
         if ret:
-            return self.trainX, self.testX, self.trainY, self.testY
+            return self.trainX, self.test_x, self.train_y, self.test_y
         else:
             return None
 
@@ -186,11 +188,11 @@ class xgb:
         self,
         zd_mass,
         fd1_mass,
-        resultDir,
-        trainX,
-        testX,
-        trainY,
-        testY,
+        result_dir,
+        train_x,
+        test_x,
+        train_y,
+        test_y,
         eta,
         max_depth,
         reg_lambda,
@@ -206,11 +208,11 @@ class xgb:
         tree=False,
         ret_mod=True,
     ):
-        if trainX.empty and trainY.empty and testX.empty and testY.empty:
-            trainX = self.trainX
-            trainY = self.trainY
-            testX = self.testX
-            testY = self.testY
+        if train_x.empty and train_y.empty and test_x.empty and test_y.empty:
+            train_x = self.trainX
+            train_y = self.train_y
+            test_x = self.test_x
+            test_y = self.test_y
             empty = True
         else:
             empty = False
@@ -219,20 +221,20 @@ class xgb:
         global data_directory
         if self.dataset == "mc":
             data_directory = select_file(
-                eta, max_depth, resultDir, reg_lambda, reg_alpha, objective
+                eta, max_depth, result_dir, reg_lambda, reg_alpha, objective
             )
             try:
                 os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
                 pass
         elif self.dataset == "bkg":
-            data_directory = resultDir + "/" + self.file_name
+            data_directory = result_dir + "/" + self.file_name
             try:
                 os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
                 pass
         elif self.dataset == "sig":
-            data_directory = resultDir + "/signal_MZD_"
+            data_directory = result_dir + "/signal_MZD_"
             try:
                 os.makedirs(data_directory)  # create directory for data/plots
             except FileExistsError:  # skip if directory already exists
@@ -241,11 +243,11 @@ class xgb:
         model = select_model(eta, max_depth, reg_lambda, reg_alpha, objective)
 
         start = time.time()
-        eval_set = [(trainX, trainY), (testX, testY)]
+        eval_set = [(train_x, train_y), (test_x, test_y)]
         # model.fit(trainX, trainY, eval_metric = [])
         model.fit(
-            trainX,
-            trainY,
+            train_x,
+            train_y,
             early_stopping_rounds=10,
             eval_metric=["logloss", "error", "auc"],
             eval_set=eval_set,
@@ -254,7 +256,7 @@ class xgb:
         end = time.time()
 
         if tree:
-            filename = resultDir + "MZD_200_55_pd_model/effective_model_tree"
+            filename = result_dir + "MZD_200_55_pd_model/effective_model_tree"
 
             # dot_data = sktree.export_graphviz(model)
             # graph = graphviz.Source(dot_data, format="png")
@@ -270,22 +272,22 @@ class xgb:
 
         if save:
             # save the model to disk
-            joblib.dump(model, resultDir + "/effective_model_tree")
+            joblib.dump(model, result_dir + "/effective_model_tree")
 
         if met:
-            # predictedY = model.predict(self.testX)
-            predictedY = model.predict(testX)
+            # predictedY = model.predict(self.test_X)
+            predictedY = model.predict(test_x)
 
-            mod_probs = model.predict_proba(testX)  # predict probabilities
+            mod_probs = model.predict_proba(test_x)  # predict probabilities
             mod_probs = mod_probs[:, 1]  # probabilities for pos. outcome only
-            mod_auc = roc_auc_score(testY, mod_probs)  # model (logistic) AUC
+            mod_auc = roc_auc_score(test_y, mod_probs)  # model (logistic) AUC
 
             # Testing, original
             class_out = data_directory + "/classification_report.json"
             out_file = open(class_out, "w")
             # class_report = dict(classification_report(self.testY, predictedY, output_dict=True))
             class_report = dict(
-                classification_report(testY, predictedY, output_dict=True)
+                classification_report(test_y, predictedY, output_dict=True)
             )
             class_report["parameters"] = {
                 "eta": eta,
@@ -296,7 +298,7 @@ class xgb:
                 "objective": objective,
             }
             # class_report['mcc'] = matthews_corrcoef(self.testY, predictedY)
-            class_report["mcc"] = matthews_corrcoef(testY, predictedY)
+            class_report["mcc"] = matthews_corrcoef(test_y, predictedY)
             json.dump(class_report, out_file)
 
             """
@@ -339,9 +341,7 @@ class xgb:
         return None
 
 
-def select_model(
-        eta, max_depth, reg_lambda, reg_alpha, objective
-) -> XGBClassifier:
+def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassifier:
     warnings.filterwarnings("ignore")
     if eta == 0.6:
         model = XGBClassifier(
@@ -354,9 +354,7 @@ def select_model(
             objective=objective,
         )
     else:
-        model = XGBClassifier(
-            random_state=7, eval_metric=["logloss", "error", "auc"]
-        )
+        model = XGBClassifier(random_state=7, eval_metric=["logloss", "error", "auc"])
 
     return model
 
