@@ -203,7 +203,7 @@ def prepareData(dataframe, testSize, scalerType = None, returnDL = False):
 #     # batch_size = batchSize,
 #     return history
 
-# def netResults(testX, testY, rootFileName, dirName):
+# def netResults(test_X, testY, rootFileName, dirName):
 #     '''
 #     Prints classification report to standard out
 #     and saves results to directory
@@ -212,14 +212,14 @@ def prepareData(dataframe, testSize, scalerType = None, returnDL = False):
 #     fileName = 'results_mZD-' + masses[0] + '_mfD-' + masses[1] + '.txt'
 #     file = open(dirName + '/' + fileName, "w")
 #     print('Test accuracy')
-#     predictedY = model.predict(testX)
+#     predictedY = model.predict(test_X)
 #     predictedY = predictedY.argmax(axis=1)
 #     print('======== Neural network results ========')
 #     print('mZD: {} mfD: {}\n'.format(masses[0], masses[1]))
 #     print(classification_report(testY, predictedY))
 #     print('Overall test accuracy')
     
-#     loss, accuracy = model.evaluate(testX, testY, verbose=1)
+#     loss, accuracy = model.evaluate(test_X, testY, verbose=1)
 #     print('Test loss: {}'.format(loss))
 #     print('Test accuracy: {}'.format(accuracy))
 #     file.write(str(accuracy))

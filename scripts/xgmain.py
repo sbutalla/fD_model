@@ -8,6 +8,7 @@ import time
 from tqdm import tqdm
 from tuning.hyper_parameter_tuning_xgb import xgb
 from tuning.plotting import plot_data, heat_map
+
 sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
 from utilities import process_data
 import warnings
@@ -50,10 +51,7 @@ def find_masses(root_file, root_file_bool):
     if root_file_bool:
         zd_mass = root_file.split("/")[-1].split("_")[1]
         fd_mass = root_file.split("/")[-1].split("_")[2].split(".")[0]
-        result_directory = (
-                parent_directory + "/MZD_%s_%s_fd_model"
-                % (zd_mass, fd_mass)
-        )
+        result_directory = parent_directory + "/MZD_%s_%s_fd_model" % (zd_mass, fd_mass)
 
     return zd_mass, fd_mass, result_directory
 
@@ -107,11 +105,11 @@ def process_single():
                         _ = boost.xgb(
                             zd_mass=zd_mass,
                             fd1_mass=fd_mass,
-                            resultDir=result_directory,
-                            trainX=pd.DataFrame(),
-                            testX=pd.DataFrame(),
-                            trainY=pd.DataFrame(),
-                            testY=pd.DataFrame(),
+                            result_dir=result_directory,
+                            train_x=pd.DataFrame(),
+                            test_x=pd.DataFrame(),
+                            train_y=pd.DataFrame(),
+                            test_y=pd.DataFrame(),
                             eta=val_eta,
                             max_depth=val_max_depth,
                             reg_lambda=val_lambda,
@@ -195,19 +193,19 @@ def pre_processed():
                 if useful_list[i] == "MZD":
                     zd_mass = useful_list[i + 1]
                     fd1_mass = useful_list[i + 2].partition(".")[0]
-                    default, optimal = run_xgb(
+                    default, optimal_parameters = optimal_default_models(
                         pd.read_csv(path_dict[outer][inner]),
                         zd_mass,
                         fd1_mass,
                         child_path,
                     )
                     model_list.append(default)
-                    model_list.append(optimal)
+                    model_list.append(optimal_parameters)
                     default_list.append(default)
-                    optimal_list.append(optimal)
+                    optimal_list.append(optimal_parameters)
         dict_of_model_direct[outer] = inner_dict
 
-    # after running all of the datasets, retrieve all of the values stored in the list
+    # after running the datasets, retrieve the values stored in the list
     model_list.sort(key=lambda x: (x.mcc, x.accuracy), reverse=True)
     default_list.sort(key=lambda x: (x.mcc, x.accuracy), reverse=True)
     optimal_list.sort(key=lambda x: (x.mcc, x.accuracy), reverse=True)
@@ -239,13 +237,13 @@ def pre_processed():
     json.dump(optimal_obj, optimal_out_file, indent=4)
 
 
-def run_xgb(final_array, zd_mass, fd1_mass, result_dir, optimal=False):
+def optimal_default_models(final_array, zd_mass, fd1_mass, result_dir, optimal=True):
     warnings.filterwarnings("ignore")
     start = time.time()
     filename = "MZD_%s_%s" % (zd_mass, fd1_mass)
     boost = new_xgb("mc", filename)
     old_boost = xgb("mc")
-    trainX, testX, trainY, testY = boost.split(final_array)
+    train_x, test_x, train_y, test_y = boost.split(final_array)
 
     """
         Arrays to store the values of the hyperparameters that are run with the model. Need to look into
@@ -266,64 +264,48 @@ def run_xgb(final_array, zd_mass, fd1_mass, result_dir, optimal=False):
     if optimal:
         # Run with the default parameters
         default = old_boost.xgb(
-            zd_mass,
-            fd1_mass,
-            result_dir,
-            trainX,
-            testX,
-            trainY,
-            testY,
-            single_pair=True,
-            ret=True,
+            zd_mass=zd_mass,
+            fd1_mass=fd1_mass,
+            result_dir=result_dir,
+            train_x=train_x,
+            test_x=test_x,
+            train_y=train_y,
+            test_y=test_y,
             eta=0.3,
             max_depth=6,
             reg_lambda=1,
             reg_alpha=0,
             objective="reg:squarederror",
-        )
-        # Run with the optimal parameters
-        optimal = old_boost.xgb(
-            zd_mass,
-            fd1_mass,
-            result_dir,
-            trainX,
-            testX,
-            trainY,
-            testY,
             single_pair=True,
             ret=True,
+        )
+
+        # Run with the optimal parameters
+        optimal_parameters = old_boost.xgb(
+            zd_mass=zd_mass,
+            fd1_mass=fd1_mass,
+            result_dir=result_dir,
+            train_x=train_x,
+            test_x=test_x,
+            train_y=train_y,
+            test_y=test_y,
             eta=0.6,
             max_depth=6,
             reg_lambda=2,
             reg_alpha=4,
             objective="binary:logistic",
+            single_pair=True,
+            ret=True,
         )
-        return default, optimal
-    else:
-        for val_eta in tqdm(hyper_parameters["eta"]):
-            for val_alpha in hyper_parameters["alpha"]:
-                for val_lambda in hyper_parameters["lambda"]:
-                    for val_obj in hyper_parameters["objective"]:
-                        for val_max_depth in hyper_parameters["max"]:
-                            _ = boost.xgb(
-                                trainX,
-                                testX,
-                                trainY,
-                                testY,
-                                eta=val_eta,
-                                max_depth=val_max_depth,
-                                reg_lambda=val_lambda,
-                                reg_alpha=val_alpha,
-                                objective=val_obj,
-                                single_pair=True,
-                                ret=True,
-                            )
+        return default, optimal_parameters
 
 
 def run_on_all():
     all_models = False
     zd_mass, fd1_mass = None, None
-    pre_processed_csv = "/Volumes/SA Hirsch/Florida Tech/research/sorted_csv_list_mine.json"
+    pre_processed_csv = (
+        "/Volumes/SA Hirsch/Florida Tech/research/sorted_csv_list_mine.json"
+    )
 
     """
         Input the path to the csv file that contains all of the preprocessed data csv lists.
@@ -396,7 +378,7 @@ def run_on_all():
             filename = "MZD_%s_%s" % (zd_mass, fd1_mass)
             boost = new_xgb("mc", filename)
             old_boost = xgb("mc")
-            trainX, testX, trainY, testY = boost.split(data)
+            train_x, test_x, train_y, test_y = boost.split(data)
 
             hyper_parameters = {
                 "alpha": [0, 1, 2, 3, 4, 5],
@@ -416,10 +398,10 @@ def run_on_all():
                                     zd_mass,
                                     fd1_mass,
                                     child_path,
-                                    trainX,
-                                    testX,
-                                    trainY,
-                                    testY,
+                                    train_x,
+                                    test_x,
+                                    train_y,
+                                    test_y,
                                     single_pair=True,
                                     ret=True,
                                     eta=val_eta,
@@ -480,9 +462,9 @@ def run_on_all():
 
 
 def draw_tree():
-    '''
-        Construct the tree based off the supplied root file.
-    '''
+    """
+    Construct the tree based off the supplied root file.
+    """
     root_file = (
         "/Users/spencerhirsch/Documents/research/root_files/MZD_200_ALL/MZD_200_55.root"
     )
@@ -520,11 +502,11 @@ def draw_tree():
     _ = boost.xgb(
         zd_mass=zd_mass,
         fd1_mass=fd_mass,
-        resultDir=result_directory,
-        trainX=pd.DataFrame(),
-        testX=pd.DataFrame(),
-        trainY=pd.DataFrame(),
-        testY=pd.DataFrame(),
+        result_dir=result_directory,
+        train_x=pd.DataFrame(),
+        test_x=pd.DataFrame(),
+        train_y=pd.DataFrame(),
+        test_y=pd.DataFrame(),
         eta=val_eta,
         max_depth=val_max_depth,
         reg_lambda=val_lambda,
@@ -576,8 +558,18 @@ def main():
     elif choice == "4":
         draw_tree()
     elif choice == "5":
-        # pre_processed()
-        run_on_all()
+        print(
+            "What do you want to test the models with:\
+        \n(1): Run optimal and default hyper-parameters \
+        \n(2): Run select samples with all hyper-parameters"
+        )
+        choice = input("Choice: ")
+        if choice == "1":
+            pre_processed()
+        elif choice == "2":
+            run_on_all()
+        else:
+            "Invalid input."
     else:
         print("Input invalid.")
 
