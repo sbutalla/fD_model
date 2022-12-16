@@ -97,7 +97,7 @@ class xgb:
         self.testX  =  pd.DataFrame(X_test, columns = ["selpT0", "selpT1", "selpT2", "selpT3", "selEta0", "selEta1", "selEta2", "selEta3",
                   "selPhi0", "selPhi1", "selPhi2", "selPhi3", "selCharge0", "selCharge1", "selCharge2", "selCharge3", "dPhi0", "dPhi1","dRA0", "dRA1", "event", "invMassA0",
                   "invMassA1"])
-        #self.test_X = self.test_X.drop(['event'], axis = 1)
+        #self.testX = self.testX.drop(['event'], axis = 1)
 
         self.trainY = pd.DataFrame(y_train, columns = ['event', 'invmA0', 'invmA1', 'pair'])
         self.trainY = self.trainY.drop(['event', 'invmA0', 'invmA1'], axis = 1)            
