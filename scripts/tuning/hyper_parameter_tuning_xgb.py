@@ -327,7 +327,7 @@ class xgb:
             mod.reg_lambda = class_report["parameters"]["l2"]
             mod.objective = class_report["parameters"]["objective"]
             mod.auc = mod_auc
-
+            mod.importance = model.feature_importances_
             mod_out = data_directory + "/model.json"
             out_file = open(mod_out, "w")
             json.dump(mod.get_model(), out_file)
@@ -343,8 +343,20 @@ class xgb:
 
 def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassifier:
     warnings.filterwarnings("ignore")
-    if eta == 0.6:
-        model = XGBClassifier(
+    # if eta == 0.6:
+    #     model = XGBClassifier(
+    #         eval_metric=["logloss", "error", "auc"],
+    #         random_state=7,
+    #         eta=eta,
+    #         max_depth=max_depth,
+    #         reg_lambda=reg_lambda,
+    #         reg_alpha=reg_alpha,
+    #         objective=objective,
+    #     )
+    # else:
+    #     model = XGBClassifier(random_state=7, eval_metric=["logloss", "error", "auc"])
+
+    model = XGBClassifier(
             eval_metric=["logloss", "error", "auc"],
             random_state=7,
             eta=eta,
@@ -353,8 +365,6 @@ def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassif
             reg_alpha=reg_alpha,
             objective=objective,
         )
-    else:
-        model = XGBClassifier(random_state=7, eval_metric=["logloss", "error", "auc"])
 
     return model
 
