@@ -27,6 +27,7 @@ class Model:
         self.reg_alpha = None
         self.objective = None
         self.auc = None
+        self.importance = None
 
     """
         Returns the dictionary of the object data stored in a dictionary.
@@ -48,5 +49,6 @@ class Model:
             "l2": self.reg_lambda,
             "objective": self.objective,
             "auc": self.auc,
+            "feature importance": self.importance,
         }
         return object_dict
