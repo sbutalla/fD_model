@@ -254,6 +254,8 @@ class xgb:
             verbose=False,
         )
         end = time.time()
+        features = X_train_scaled.columns
+        features_importances = model.feature_importances_
 
         if tree:
             filename = result_dir + "MZD_200_55_pd_model/effective_model_tree"
@@ -341,21 +343,13 @@ class xgb:
         return None
 
 
+'''
+    Function used to select the model that needs to be constructed. (Used to contain other code, has been removed).
+    Function constructs the classifier for the model and returns the classifier to the caller.
+'''
+
 def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassifier:
     warnings.filterwarnings("ignore")
-    # if eta == 0.6:
-    #     model = XGBClassifier(
-    #         eval_metric=["logloss", "error", "auc"],
-    #         random_state=7,
-    #         eta=eta,
-    #         max_depth=max_depth,
-    #         reg_lambda=reg_lambda,
-    #         reg_alpha=reg_alpha,
-    #         objective=objective,
-    #     )
-    # else:
-    #     model = XGBClassifier(random_state=7, eval_metric=["logloss", "error", "auc"])
-
     model = XGBClassifier(
             eval_metric=["logloss", "error", "auc"],
             random_state=7,
@@ -367,6 +361,10 @@ def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassif
         )
 
     return model
+
+'''
+    Used to select where to store the data. (Used to contain other code that has since been removed.)
+'''
 
 
 def select_file(eta, max_depth, result_dir, reg_lambda, reg_alpha, objective):

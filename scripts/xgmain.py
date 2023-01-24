@@ -18,7 +18,6 @@ parent_directory = "/Volumes/SA Hirsch/Florida Tech/research/dataframes"
 """
     Function that deals with processing data. Utilizes the process_data class from the utilities 
     directory. Returns a final array with all of the values necessary for generating the models.
-    
     Some samples already have preprocessed data with them, no reason to process data if .csv file
     is already generated for the sample.
 """
@@ -61,6 +60,62 @@ def find_masses(root_file, root_file_bool):
     to return the final array for the data. Runs all data through the parameters to generate all models for each
     set up parameters.
 """
+
+def single_preprocessed():
+    warnings.filterwarnings("ignore")
+    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
+    filename = '/Volumes/SA\ Hirsch/Florida\ Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
+    zd_mass = 200
+    fd1_mass = 55
+    resultant_filename = ('MZD_%s_%s', zd_mass, fd1_mass)
+    start = time.time()
+    boost = new_xgb("mc", resultant_filename)
+    old_boost = xgb("mc")
+    train_x, test_x, train_y, test_y = boost.split(filename)
+
+    hyper_parameters = {
+        "alpha": [0, 1, 2, 3, 4, 5],
+        "lambda": [0, 1, 2, 3, 4, 5],
+        "eta": [0.6, 0.5, 0.4, 0.3, 0.1],
+        "max": [3, 6, 10, 12, 15],
+        "objective": ["binary:logistic", "binary:hinge", "reg:squarederror"],
+    }
+
+    model_list = []
+    sample_start = time.time()
+    for val_eta in tqdm(hyper_parameters["eta"]):
+        for val_alpha in hyper_parameters["alpha"]:
+            for val_lambda in hyper_parameters["lambda"]:
+                for val_obj in hyper_parameters["objective"]:
+                    for val_max_depth in hyper_parameters["max"]:
+                        model_object = old_boost.xgb(
+                            zd_mass,
+                            fd1_mass,
+                            parent,
+                            train_x,
+                            test_x,
+                            train_y,
+                            test_y,
+                            single_pair=True,
+                            ret=True,
+                            eta=val_eta,
+                            max_depth=val_max_depth,
+                            reg_lambda=val_lambda,
+                            reg_alpha=val_alpha,
+                            objective=val_obj,
+                        )
+                        model_list.append(model_object)
+
+    end = time.time()
+    sample_time = end - start
+    t_hours = (sample_time / 60) / 60
+
+    class_out = parent + "time.json"
+    out_file = open(class_out, "w")
+    json.dump(t_hours, out_file)
+    print(t_hours)
+
+
 
 
 def process_single():
@@ -518,6 +573,86 @@ def draw_tree():
 
 
 """
+Given the preprocessed data csv file, perform a grid search on the dataset while pulling the various features from the
+model. Once there is significant fall of in the effectiveness of the model. Terminate the process and return all results.
+"""
+
+
+def feature_extraction():
+    file = "/Volumes/SA Hirsch/Florida Tech/research/dataframe_csv_fD_model/total_df_MZD_200_55.csv"
+    result = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/optimized_all/"
+    data = pd.read_csv(file)
+    columns = [
+        "selpT0",
+        "selpT1",
+        "selpT2",
+        "selpT3",
+        "selEta0",
+        "selEta1",
+        "selEta2",
+        "selEta3",
+        "selPhi0",
+        "selPhi1",
+        "selPhi2",
+        "selPhi3",
+        "selCharge0",
+        "selCharge1",
+        "selCharge2",
+        "selCharge3",
+        "dPhi0",
+        "dPhi1",
+        "dRA0",
+        "dRA1",
+        "event",
+        "invMassA0",
+        "invMassA1",
+        "pair",
+    ]
+
+    zd_mass = 200
+    fd1_mass = 55
+
+    warnings.filterwarnings("ignore")
+    start = time.time()
+    filename = "MZD_%s_%s" % (zd_mass, fd1_mass)
+    boost = new_xgb("mc", filename)
+    old_boost = xgb("mc")
+    train_x, test_x, train_y, test_y = boost.split(data)
+
+    hyper_parameters = {
+        "alpha": [0, 1, 2, 3, 4, 5],
+        "lambda": [0, 1, 2, 3, 4, 5],
+        "eta": [0.6, 0.5, 0.4, 0.3, 0.1],
+        "max": [3, 6, 10, 12, 15],
+        "objective": ["binary:logistic", "binary:hinge", "reg:squarederror"],
+    }
+
+    model_list = []
+    sample_start = time.time()
+    for val_eta in tqdm(hyper_parameters["eta"]):
+        for val_alpha in hyper_parameters["alpha"]:
+            for val_lambda in hyper_parameters["lambda"]:
+                for val_obj in hyper_parameters["objective"]:
+                    for val_max_depth in hyper_parameters["max"]:
+                        model_object = old_boost.xgb(
+                            zd_mass,
+                            fd1_mass,
+                            result,
+                            train_x,
+                            test_x,
+                            train_y,
+                            test_y,
+                            single_pair=True,
+                            ret=True,
+                            eta=val_eta,
+                            max_depth=val_max_depth,
+                            reg_lambda=val_lambda,
+                            reg_alpha=val_alpha,
+                            objective=val_obj,
+                        )
+                        model_list.append(model_object)
+
+"""
     Driver function that handles each respective function. Takes input from the standard input stream
     and calls each function for its desired ability specified by the user. Makes the code much cleaner 
     and more concise.
@@ -561,13 +696,16 @@ def main():
         print(
             "What do you want to test the models with:\
         \n(1): Run optimal and default hyper-parameters \
-        \n(2): Run select samples with all hyper-parameters"
+        \n(2): Run select samples with all hyper-parameters \
+        \n(3): Run on single preprocessed"
         )
         choice = input("Choice: ")
         if choice == "1":
             pre_processed()
         elif choice == "2":
             run_on_all()
+        elif choice == "3":
+            single_preprocessed()
         else:
             "Invalid input."
     else:
