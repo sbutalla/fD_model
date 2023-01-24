@@ -65,13 +65,14 @@ def single_preprocessed():
     warnings.filterwarnings("ignore")
     parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
     filename = '/Volumes/SA\ Hirsch/Florida\ Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
+    data = pd.read_csv(filename)
     zd_mass = 200
     fd1_mass = 55
     resultant_filename = ('MZD_%s_%s', zd_mass, fd1_mass)
     start = time.time()
     boost = new_xgb("mc", resultant_filename)
     old_boost = xgb("mc")
-    train_x, test_x, train_y, test_y = boost.split(filename)
+    train_x, test_x, train_y, test_y = boost.split(data)
 
     hyper_parameters = {
         "alpha": [0, 1, 2, 3, 4, 5],
