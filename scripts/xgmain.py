@@ -9,7 +9,8 @@ from tqdm import tqdm
 from tuning.hyper_parameter_tuning_xgb import xgb
 from tuning.plotting import plot_data, heat_map
 
-sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
+#sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
+sys.path.insert(0, "/Users/spencer/Documents/GitHub/fD_model/scripts/utilities")
 from utilities import process_data
 import warnings
 
