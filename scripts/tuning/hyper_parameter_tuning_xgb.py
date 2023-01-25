@@ -254,8 +254,10 @@ class xgb:
             verbose=False,
         )
         end = time.time()
-        features = X_train_scaled.columns
-        features_importances = model.feature_importances_
+
+        # feature things that need to get put elsewhere, not my problem atm
+        # features = X_train_scaled.columns
+        # features_importances = model.feature_importances_
 
         if tree:
             filename = result_dir + "MZD_200_55_pd_model/effective_model_tree"
