@@ -199,7 +199,7 @@ class xgb:
         reg_alpha,
         objective,
         met=True,
-        save=True,
+        save=False,
         single_pair=False,
         ret=True,
         verbose=True,
@@ -331,7 +331,7 @@ class xgb:
             mod.reg_lambda = class_report["parameters"]["l2"]
             mod.objective = class_report["parameters"]["objective"]
             mod.auc = mod_auc
-            mod.importance = model.feature_importances_
+            # mod.importance = model.feature_importances_
             mod_out = data_directory + "/model.json"
             out_file = open(mod_out, "w")
             json.dump(mod.get_model(), out_file)

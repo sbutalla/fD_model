@@ -6,7 +6,7 @@ import pprint
 import sys
 import time
 from tqdm import tqdm
-from tuning.hyper_parameter_tuning_xgb import xgb
+from tuning.hyper_parameter_tuning_xgb import xgb as xgb
 from tuning.plotting import plot_data, heat_map
 
 #sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
@@ -65,7 +65,7 @@ def find_masses(root_file, root_file_bool):
 def single_preprocessed():
     warnings.filterwarnings("ignore")
     parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
-    filename = '/Volumes/SA\ Hirsch/Florida\ Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
+    filename = '/Volumes/SA Hirsch/Florida Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
     data = pd.read_csv(filename)
     zd_mass = 200
     fd1_mass = 55
