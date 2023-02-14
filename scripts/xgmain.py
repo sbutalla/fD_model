@@ -64,11 +64,11 @@ def find_masses(root_file, root_file_bool):
 
 def single_preprocessed():
     warnings.filterwarnings("ignore")
-    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
-    filename = '/Volumes/SA Hirsch/Florida Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
+    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/aggregate_tuning/"
+    filename = '/Volumes/SA Hirsch/Florida Tech/research/all_signal_dfs_concatenated_all_permutations.csv'
     data = pd.read_csv(filename)
-    zd_mass = 200
-    fd1_mass = 55
+    zd_mass = 0
+    fd1_mass = 0
     resultant_filename = ('MZD_%s_%s', zd_mass, fd1_mass)
     start = time.time()
     boost = new_xgb("mc", resultant_filename)
@@ -82,6 +82,14 @@ def single_preprocessed():
         "max": [3, 6, 10, 12, 15],
         "objective": ["binary:logistic", "binary:hinge", "reg:squarederror"],
     }
+	'''
+		Revised parameters with aggregated dataset. Computation takes too long as is too expensive with all 2700 possible
+		permutations.
+	'''
+
+    hyper_parameters = {
+		"alpha":
+	}
 
     model_list = []
     sample_start = time.time()
@@ -107,6 +115,21 @@ def single_preprocessed():
                             objective=val_obj,
                         )
                         model_list.append(model_object)
+	
+	 
+    model_list.sort(
+        key=lambda x: (x.mcc, x.accuracy), reverse=True
+    )  # Sort based on important values
+
+    obj_list = []
+    for val in model_list:
+        obj_list.append(val.get_model())
+
+    print("Completed.")
+
+    class_out = parent + "/model_list.json"
+    out_file = open(class_out, "w")
+    json.dump(obj_list, out_file, indent=4) 
 
     end = time.time()
     sample_time = end - start
