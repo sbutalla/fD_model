@@ -19,8 +19,8 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import train_test_split
 import sys
 from xgboost import XGBClassifier
-sys.path.insert(0, "/Users/spencer/Documents/GitHub/fD_model/scripts/utilities")
-# sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities")
+#sys.path.insert(0, "/Users/spencer/Documents/GitHub/fD_model/scripts/utilities")
+sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities")
 from file_utils import *
 
 global resultDir

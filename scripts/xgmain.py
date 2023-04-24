@@ -7,7 +7,7 @@ import sys
 import time
 from tqdm import tqdm
 from tuning.hyper_parameter_tuning_xgb import xgb as xgb
-from tuning.plotting import plot_data, heat_map
+from tuning.plotting import plot_data, heat_map, numerous_heatmaps
 
 #sys.path.insert(0, "/Users/spencerhirsch/Documents/GitHub/fD_model/scripts/utilities/")
 sys.path.insert(0, "/Users/spencer/Documents/GitHub/fD_model/scripts/utilities")
@@ -64,49 +64,114 @@ def find_masses(root_file, root_file_bool):
 
 def single_preprocessed():
     warnings.filterwarnings("ignore")
-    parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
-    filename = '/Volumes/SA Hirsch/Florida Tech/research/archive_csv_fD_model/MZD_200/MZD_200_55/total_df_MZD_200_55.csv'
+    # parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
+    parent = "/Users/spencerhirsch/Documents/research/important_models/"
+    filename = '/Users/spencerhirsch/Documents/research/datasets/all_signal_dfs_concatenated_all_permutations.csv'
     data = pd.read_csv(filename)
-    zd_mass = 200
-    fd1_mass = 55
+    zd_mass = 0
+    fd1_mass = 0
     resultant_filename = ('MZD_%s_%s', zd_mass, fd1_mass)
     start = time.time()
     boost = new_xgb("mc", resultant_filename)
     old_boost = xgb("mc")
     train_x, test_x, train_y, test_y = boost.split(data)
 
+    # hyper_parameters = {
+    #     "alpha": [0, 1, 2, 3, 4, 5],
+    #     "lambda": [0, 1, 2, 3, 4, 5],
+    #     "eta": [0.6, 0.5, 0.4, 0.3, 0.1],
+    #     "max": [3, 6, 10, 12, 15],
+    #     "objective": ["binary:logistic", "binary:hinge", "reg:squarederror"],
+    # }
+    #
+    # hyper_parameters = {
+    #     "alpha": [5, 0],
+    #     "lambda": [0, 1],
+    #     "eta": [0.4, 0.3],
+    #     "max": [10, 6],
+    #     "objective": ["binary:logistic"],
+    # }
+
     hyper_parameters = {
-        "alpha": [0, 1, 2, 3, 4, 5],
-        "lambda": [0, 1, 2, 3, 4, 5],
-        "eta": [0.6, 0.5, 0.4, 0.3, 0.1],
-        "max": [3, 6, 10, 12, 15],
-        "objective": ["binary:logistic", "binary:hinge", "reg:squarederror"],
+        "alpha": [5, 4, 3, 2, 1, 0],
+        "lambda": [5, 4, 3, 2, 1, 0],
+        "eta": [0.3, 0.4, 0.5],
+        "max": [3, 6, 10],
+        "objective": ["binary:logistic"],
     }
 
     model_list = []
     sample_start = time.time()
-    for val_eta in tqdm(hyper_parameters["eta"]):
-        for val_alpha in hyper_parameters["alpha"]:
-            for val_lambda in hyper_parameters["lambda"]:
-                for val_obj in hyper_parameters["objective"]:
-                    for val_max_depth in hyper_parameters["max"]:
-                        model_object = old_boost.xgb(
-                            zd_mass,
+
+    val_eta = 0.4
+    val_max_depth = 10
+    reg_lambda = 0
+    reg_alpha = 5
+
+    model_object = old_boost.xgb(zd_mass,
                             fd1_mass,
                             parent,
                             train_x,
                             test_x,
                             train_y,
                             test_y,
+                            model_type='optimal',
                             single_pair=True,
                             ret=True,
                             eta=val_eta,
                             max_depth=val_max_depth,
-                            reg_lambda=val_lambda,
-                            reg_alpha=val_alpha,
-                            objective=val_obj,
-                        )
-                        model_list.append(model_object)
+                            reg_lambda=reg_lambda,
+                            reg_alpha=reg_alpha,
+                            objective="binary:logistic",
+                            )
+    model_list.append(model_object)
+
+    val_eta = 0.3
+    val_max_depth = 6
+    reg_lambda = 1
+    reg_alpha = 0
+
+    model_object = old_boost.xgb(zd_mass,
+                            fd1_mass,
+                            parent,
+                            train_x,
+                            test_x,
+                            train_y,
+                            test_y,
+                            model_type='default',
+                            single_pair=True,
+                            ret=True,
+                            eta=val_eta,
+                            max_depth=val_max_depth,
+                            reg_lambda=reg_lambda,
+                            reg_alpha=reg_alpha,
+                            objective="binary:logistic",
+                            )
+
+    model_list.append(model_object)
+
+    # for val_eta in tqdm(hyper_parameters["eta"]):
+    #     for val_alpha in hyper_parameters["alpha"]:
+    #         for val_lambda in hyper_parameters["lambda"]:
+    #             for val_obj in hyper_parameters["objective"]:
+    #                 for val_max_depth in hyper_parameters["max"]:
+    #                     model_object = old_boost.xgb(
+    #                         zd_mass,
+    #                         fd1_mass,
+    #                         parent,
+    #                         train_x,
+    #                         test_x,
+    #                         train_y,
+    #                         test_y,
+    #                         single_pair=True,
+    #                         ret=True,
+    #                         eta=val_eta,
+    #                         max_depth=val_max_depth,
+    #                         reg_lambda=val_lambda,
+    #                         reg_alpha=val_alpha,
+    #                         objective=val_obj,
+    #                     )
+    #                     model_list.append(model_object)
 
     end = time.time()
     sample_time = end - start
@@ -668,7 +733,8 @@ def main():
         \n(2): Generate Heat Map \
         \n(3): Plot data \
         \n(4): Output tree \
-        \n(5): Run all models\n"
+        \n(5): Run all models \
+        \n(6): Generate aggregated heatmaps \n"
     )
 
     choice = input("Choice: ")
@@ -688,8 +754,14 @@ def main():
             metric = "f1"
         else:
             print("Invalid input.")
-
-        heat_map(metric)
+        l1 = 0
+        l2 = 0
+        while l1 < 6:
+            while l2 < 6:
+                heat_map(metric, l1, l2)
+                l2 += 1
+            l1 += 1
+            l2 = 0
     elif choice == "3":
         plot_data()
     elif choice == "4":
@@ -710,6 +782,8 @@ def main():
             single_preprocessed()
         else:
             "Invalid input."
+    elif choice == "6":
+        numerous_heatmaps('time')
     else:
         print("Input invalid.")
 
