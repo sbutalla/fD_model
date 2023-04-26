@@ -3,7 +3,7 @@ import json
 import matplotlib.pyplot as plt
 import os
 import pandas as pd
-from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.metrics import classification_report, roc_auc_score, confusion_matrix, roc_curve
 from sklearn.metrics import accuracy_score, matthews_corrcoef
 from sklearn.model_selection import train_test_split
 import sys
@@ -11,6 +11,8 @@ import time
 from tuning.model import Model
 import warnings
 from xgboost import XGBClassifier
+import pickle
+import numpy as np
 
 
 """
@@ -25,7 +27,8 @@ from xgboost import XGBClassifier
 """
 
 
-result_dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/"
+# result_dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/"
+result_dir = "/Users/spencerhirsch/Documents/research/important_models/"
 
 
 class colors:
@@ -198,6 +201,7 @@ class xgb:
         reg_lambda,
         reg_alpha,
         objective,
+        model_type,
         met=True,
         save=False,
         single_pair=False,
@@ -335,6 +339,76 @@ class xgb:
             mod_out = data_directory + "/model.json"
             out_file = open(mod_out, "w")
             json.dump(mod.get_model(), out_file)
+            joblib.dump(model, data_directory + "/trained_model_%s.sav" % model_type)  # save the trained model
+            pkl_name = (data_directory + '/trained_model_%s.pkl') % model_type
+            pickle.dump(model, open(pkl_name, "wb"))
+
+
+            # Confusion Matrix
+            results = model.evals_result()
+            types = [['TP', 'FP'], ['FN', 'TN']]
+            tn, fp, fn, tp = confusion_matrix(test_y, predictedY).ravel()
+            conf_mat = [[int(tp), int(fp)], [int(fn),
+                                             int(tn)]]  # must convert to python built-in int and not np int64 (int64 not serializable to json)
+            fig, ax = plt.subplots(figsize=(12, 12))
+            im = ax.imshow(conf_mat, interpolation='nearest', cmap=plt.cm.winter, vmin=20000, vmax=1000000)
+            cbar = fig.colorbar(im, fraction=0.0458, pad=0.04, label='Number classifications')
+            ax.set_title('Confusion matrix')
+            ax.set_xticks([])
+            ax.set_yticks([])
+
+            ## place text labels of the TP, FP, FN, TN
+            for ii in range(2):
+                for jj in range(2):
+                    plt.text(jj - 0.2, ii, '%s = %d' % (types[ii][jj], conf_mat[ii][jj]), fontsize=30)
+
+            fig.tight_layout()
+
+            fig.savefig(data_directory + "/confusion_matrix_%s.png" % model_type, transparent=True)
+            # End Confusion Matrix
+
+
+            '''
+            Plotting the AUC
+            '''
+
+            ns_probs = np.zeros(len(test_y),
+                                dtype=int)  # initialize array of probabilities for a classifier with no skill
+            mod_probs = model.predict_proba(test_x)  # predict probabilities
+            mod_probs = mod_probs[:, 1]  # keep probabilities for positive outcome only
+
+            ## calculate scores for ROC and AUC
+            ns_auc = roc_auc_score(test_y, ns_probs)  # no-skill AUC
+            mod_auc = roc_auc_score(test_y, mod_probs)  # model (logistic) AUC
+
+            ## summarize ROC with the area under the curve (AUC)
+
+            print('No Skill: AUC = %.3f' % (ns_auc))
+            print('Logistic: AUC = %.3f' % (mod_auc))
+
+            ## generate roc curves
+            ns_fpr, ns_tpr, _ = roc_curve(test_y, ns_probs)
+            mod_fpr, mod_tpr, _ = roc_curve(test_y, mod_probs)
+
+            ## make a pretty plot
+            fig, ax = plt.subplots(figsize=(10, 10))
+            ax.grid(zorder=0)
+            ax.plot(ns_fpr, ns_tpr, linestyle='--', color='tab:red', label='No Skill')
+            ax.plot(mod_fpr, mod_tpr, marker='.', color='tab:blue', label='Logistic')
+            ax.set_xlabel('False Positive Rate', loc='right')
+            ax.set_ylabel('True Positive Rate', loc='top')
+            ax.set_facecolor("white")
+            ax.legend()
+            textstr = '\n'.join((
+                'No skill AUC = %.3f' % (ns_auc,),
+                'Model AUC = %.3f' % (mod_auc,)))
+
+            props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+
+            ax.text(0.5, 0.32, textstr, transform=ax.transAxes, fontsize=26, verticalalignment='top', bbox=props)
+            fig.tight_layout()
+
+            fig.savefig(data_directory + "/graph_auc_%s.png" % model_type, transparent=True)
 
             if ret_mod:
                 return mod

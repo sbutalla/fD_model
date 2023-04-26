@@ -77,21 +77,23 @@ def plot_data():
 """
 
 
-def heat_map(metric):
+def heat_map(metric, l1, l2):
     # Declaration and initialization of vmin and vmax.
     vmin = 0
     vmax = 1
     if metric == "f1":
         vmin = 0.8
     elif metric == "mcc":
-        vmin = 0.7
+        vmin = 0.91
+        vmax = 0.948
     elif metric == "time":
         vmin = 1
         vmax = 11
 
     # Directory the stores the object list json file.
-    dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102822_843AM/model_list.json"
-
+    #dir = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/archive/data_102822_843AM/model_list.json"
+    #dir = "/Users/spencerhirsch/Documents/research/output.json"
+    dir = '/Users/spencerhirsch/Documents/research/isolated_jsons/%s_%s_models.json' % (l1, l2)
     f = open(dir)
     data = json.load(f)
 
@@ -136,8 +138,8 @@ def heat_map(metric):
     value_array.reverse()  # Reverse the array storing all of the values
     value_array = np.array(value_array)  # Convert to numpy array
 
-    plt.rcParams.update({"font.size": 14})  # Increase font size for plotting
-    fig, ax = plt.subplots(figsize=(40, 4))  # Initialize plot
+    plt.rcParams.update({"font.size": 55})  # was 14I ncrease font size for plotting
+    fig, ax = plt.subplots(figsize=(40, 20))  # was 40, 4 Initialize plot
     im = ax.imshow(value_array, vmin=vmin, vmax=vmax)
     ax.set_xlabel(r"Learning rate ($\eta$)", loc="right")
     ax.set_ylabel("Max depth", loc="top")
@@ -149,6 +151,7 @@ def heat_map(metric):
     ax.set_xticks(np.arange(len(eta_array)), labels=eta_array)
     ax.set_yticks(np.arange(len(max_depth_array)), labels=max_depth_array)
     plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+    plt.title("L1 = %s and L2 = %s" % (l1, l2))
 
     """
         Iterate through the values in the numpy array and assign the value to a section.
@@ -166,7 +169,7 @@ def heat_map(metric):
                     ha="center",
                     va="center",
                     color="w",
-                    fontsize=8,
+                    fontsize=40,
                 )
             else:
                 if float(value_array[i, j]) > 6.4:
@@ -191,16 +194,152 @@ def heat_map(metric):
                     )
 
     fig.tight_layout()
-    plt.show()
+    # plt.show()
 
     # Output path for the generated plot
-    path = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/plots"
-
+    # path = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/plots"
+    path = '/Users/spencerhirsch/Documents/research/isolated_jsons'
     try:
         os.mkdir(path)
     except OSError as error:
         pass
 
-    fig.savefig(path + "/heat_map_%s" % metric)
+    fig.savefig(path + "/heat_map_%s_%s_%s" % (metric, l1, l2))
 
     index += 1
+
+
+def numerous_heatmaps(metric):
+    vmin = 0
+    vmax = 1
+    if metric == "f1":
+        vmin = 0.93
+        vmax = 0.965
+    elif metric == "mcc":
+        vmin = 0.91
+        vmax = 0.948
+    elif metric == "time":
+        vmin = 500
+        vmax = 1650
+    elif metric == "accuracy":
+        vmin = 0.96
+        vmax = 0.98
+    elif metric == "precision":
+        vmin = 0.94
+        vmax = 0.97
+    dir_list = []
+    for i in range(5, -1, -1):
+        for j in range(0, 6):
+            dir = '/Users/spencerhirsch/Documents/research/isolated_jsons/%s_%s_models.json' % (i, j)
+            dir_list.append(dir)
+
+    # dir_list.reverse()
+    print(dir_list)
+    fontsize = 35
+    # fig, ax = plt.subplots(6, 6, gridspec_kw={'hspace': 0.5, 'wspace': 0.1})
+    fig, ax = plt.subplots(6, 6, figsize=(50, 50))
+    # fig.tight_layout(pad=5.0)
+    fig.tight_layout(pad=3.0)
+    for direct in dir_list:
+        f = open(direct)
+        data = json.load(f)
+        value_array = []
+
+        # Sort dict based on learning rate in increasing order
+        data = sorted(data, key=lambda x: x["eta"], reverse=False)
+        index = 0
+
+        eta_array = []
+        max_depth_array = []
+        for val in data:
+            if val["eta"] not in eta_array:
+                eta_array.append(val["eta"])
+
+            if val["max depth"] not in max_depth_array:
+                max_depth_array.append(val["max depth"])
+
+        eta_array.sort()
+        max_depth_array.sort()
+
+        for i in range(len(max_depth_array)):
+            storage = []
+            temp_value_array = []
+            data = sorted(data, key=lambda x: x["eta"])
+            for val in data:
+                if val["max depth"] == max_depth_array[index]:
+                    storage.append(val)
+
+            for val in storage:
+                temp_value_array.append(val["%s" % metric])
+            value_array.append(temp_value_array)
+            index += 1
+
+        value_array.reverse()  # Reverse the array storing all of the values
+        value_array = np.array(value_array)  # Convert to numpy array
+
+        plt.rcParams.update({"font.size": fontsize})  # was 14I ncrease font size for plotting
+        # fig, ax = plt.subplots(figsize=(40, 20))  # was 40, 4 Initialize plot
+        split = direct.split('/')
+        split = split[len(split) - 1].split('_')
+        l1 = int(split[0])
+        l2 = int(split[1])
+        print(l1)
+        print(l2)
+        xpos = abs(l1-5)
+
+        im = ax[xpos, l2].imshow(value_array, vmin=vmin, vmax=vmax)
+        ax[xpos, l2].set_xlabel(r"Learning rate ($\eta$)", loc="right",fontsize=fontsize)
+        ax[xpos, l2].set_ylabel("Max depth", loc="top", fontsize=fontsize)
+        ax[xpos, l2].set_title("L1=%s and L2=%s" % (l1, l2))
+        max_depth_array.reverse()  # Reverse the y-axis to increasing order.
+        ax[xpos, l2].set_xticks(np.arange(len(eta_array)), labels=eta_array, fontsize=fontsize, minor=False)
+        ax[xpos, l2].set_yticks(np.arange(len(max_depth_array)), labels=max_depth_array, fontsize=fontsize, minor=False)
+        plt.setp(ax[xpos, l2].get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
+
+        # for i in range(len(max_depth_array)):
+        #     for j in range(len(eta_array)):
+        #         if metric != "time":
+        #             text = ax[xpos, l2].text(
+        #                 j,
+        #                 i,
+        #                 str(value_array[i, j])[:5],
+        #                 ha="center",
+        #                 va="center",
+        #                 color="w",
+        #                 fontsize=6,
+        #             )
+        #         else:
+        #             if float(value_array[i, j]) > 6.4:
+        #                 text = ax[l1, l2].text(
+        #                     j,
+        #                     i,
+        #                     str(value_array[i, j])[:5],
+        #                     ha="center",
+        #                     va="center",
+        #                     color="k",
+        #                     fontsize=10,
+        #                 )
+        #             else:
+        #                 text = ax[l1, l2].text(
+        #                     j,
+        #                     i,
+        #                     str(value_array[i, j])[:5],
+        #                     ha="center",
+        #                     va="center",
+        #                     color="w",
+        #                     fontsize=10,
+        #                 )
+
+    # l1_list = [0, 1, 2, 3, 4, 5]
+    # l2_list = [0, 1, 2, 3, 4, 5]
+    # for l1 in l1_list:
+    #     fig.text(-0.03, l1, r'$L_{1} = %s$' % l1, fontsize=44)
+    # for l2 in l1_list:
+    #     fig.text(l2, -0.01, r'$L_{2} = %s$' % l2, fontsize=44)
+    plt.rcParams.update({"font.size": 100})  # was 14I ncrease font size for plotting
+    fig.colorbar(im, ax=ax.ravel().tolist(), label=("%s (Seconds)" % metric.capitalize()))
+    # cbar.ax.tick_params(labelsize=50)
+    # plt.subplot_tool()
+    # plt.show()
+    fig.savefig("/Users/spencerhirsch/Desktop/heat_map_%s.png" % metric)
+    fig.savefig("/Users/spencerhirsch/Documents/research/heatmap/heat_map_%s.png" % metric)
