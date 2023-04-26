@@ -426,17 +426,32 @@ class xgb:
 
 def select_model(eta, max_depth, reg_lambda, reg_alpha, objective) -> XGBClassifier:
     warnings.filterwarnings("ignore")
+#    model = XGBClassifier(
+#           eval_metric=["logloss", "error", "auc"],
+#            random_state=7,
+#            eta=eta,
+#            max_depth=max_depth,
+#            reg_lambda=reg_lambda,
+#            reg_alpha=reg_alpha,
+#            objective=objective,
+#        )
+
+#    return model
+
     model = XGBClassifier(
-            eval_metric=["logloss", "error", "auc"],
-            random_state=7,
-            eta=eta,
-            max_depth=max_depth,
-            reg_lambda=reg_lambda,
-            reg_alpha=reg_alpha,
-            objective=objective,
+        n_jobs=-1,
+        # use_label_encoder=False,
+        eval_metric="logloss",
+        random_state=7,
+        eta=eta,
+        max_depth=max_depth,
+        reg_lambda=reg_lambda,
+        reg_alpha=reg_alpha,
+        objective=objective
         )
 
     return model
+
 
 '''
     Used to select where to store the data. (Used to contain other code that has since been removed.)

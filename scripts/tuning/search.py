@@ -29,4 +29,17 @@ def main():
     print(total_time)
 
 
+# main()
+#     for file in file_list:
+#         print(file)
+#     total = 6*6*5*5*3
+#     print(len(file_list))
+#     print(total)
+#     print(len(file_list)/total)
+#
+#     for file in file_list:
+#         with open(root_dir) as json_file:
+#             path_dict =json.load(json_file)
+#
+#
 main()

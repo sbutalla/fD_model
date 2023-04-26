@@ -67,6 +67,9 @@ def single_preprocessed():
     # parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/single_dataset/"
     parent = "/Users/spencerhirsch/Documents/research/important_models/"
     filename = '/Users/spencerhirsch/Documents/research/datasets/all_signal_dfs_concatenated_all_permutations.csv'
+    #
+    # parent = "/Volumes/SA Hirsch/Florida Tech/research/dataframes/aggregate_tuning/"
+    # filename = '/Volumes/SA Hirsch/Florida Tech/research/all_signal_dfs_concatenated_all_permutations.csv'
     data = pd.read_csv(filename)
     zd_mass = 0
     fd1_mass = 0
@@ -99,6 +102,14 @@ def single_preprocessed():
         "max": [3, 6, 10],
         "objective": ["binary:logistic"],
     }
+	'''
+		Revised parameters with aggregated dataset. Computation takes too long as is too expensive with all 2700 possible
+		permutations.
+	'''
+
+    # hyper_parameters = {
+	# 	"alpha":
+	# }
 
     model_list = []
     sample_start = time.time()
@@ -172,6 +183,26 @@ def single_preprocessed():
     #                         objective=val_obj,
     #                     )
     #                     model_list.append(model_object)
+    #                         reg_lambda=val_lambda,
+    #                         reg_alpha=val_alpha,
+    #                         objective=val_obj,
+    #                     )
+    #                     model_list.append(model_object)
+	#
+	 
+    model_list.sort(
+        key=lambda x: (x.mcc, x.accuracy), reverse=True
+    )  # Sort based on important values
+
+    obj_list = []
+    for val in model_list:
+        obj_list.append(val.get_model())
+
+    print("Completed.")
+
+    class_out = parent + "/model_list.json"
+    out_file = open(class_out, "w")
+    json.dump(obj_list, out_file, indent=4)
 
     end = time.time()
     sample_time = end - start
